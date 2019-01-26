@@ -13,10 +13,12 @@ CLASS zcl_wd_csv DEFINITION PUBLIC CREATE PUBLIC.
                             iv_separator TYPE mty_separator DEFAULT mc_default_separator
                             iv_delimiter TYPE mty_delimiter DEFAULT mc_default_delimiter
                   RAISING   zcx_wd_csv_invalid_newline,
-      parse_file_appl IMPORTING iv_path TYPE string
-                      EXPORTING et_data TYPE table
+      parse_file_appl IMPORTING iv_has_header TYPE abap_bool DEFAULT abap_false
+                                iv_path       TYPE string
+                      EXPORTING et_data       TYPE table
                       RAISING   cx_sy_struct_creation,
-      parse_file_local IMPORTING iv_path        TYPE string
+      parse_file_local IMPORTING iv_has_header  TYPE abap_bool DEFAULT abap_false
+                                 iv_path        TYPE string
                                  iv_encoding    TYPE abap_encod DEFAULT '4110'
                                  iv_replacement TYPE abap_repl DEFAULT '#'
                                  iv_ignore_cerr TYPE abap_bool DEFAULT abap_true
@@ -27,7 +29,8 @@ CLASS zcl_wd_csv DEFINITION PUBLIC CREATE PUBLIC.
                                  cx_sy_conversion_codepage
                                  cx_parameter_invalid_type
                                  cx_sy_struct_creation,
-      parse_string IMPORTING iv_csv_string TYPE string
+      parse_string IMPORTING iv_has_header TYPE abap_bool DEFAULT abap_false
+                             iv_csv_string TYPE string
                    EXPORTING et_data       TYPE table
                    RAISING   cx_sy_struct_creation.
   PROTECTED SECTION.
@@ -117,7 +120,8 @@ CLASS zcl_wd_csv IMPLEMENTATION.
                     IMPORTING ev_csv_string = lv_csv_string ).
 
 * ---------------------------------------------------------------------
-    parse_string( EXPORTING iv_csv_string = lv_csv_string
+    parse_string( EXPORTING iv_has_header = iv_has_header
+                            iv_csv_string = lv_csv_string
                   IMPORTING et_data       = et_data       ).
 
 * ---------------------------------------------------------------------
@@ -137,7 +141,8 @@ CLASS zcl_wd_csv IMPLEMENTATION.
                      IMPORTING ev_csv_string  = lv_csv_string ).
 
 * ---------------------------------------------------------------------
-    parse_string( EXPORTING iv_csv_string = lv_csv_string
+    parse_string( EXPORTING iv_has_header = iv_has_header
+                            iv_csv_string = lv_csv_string
                   IMPORTING et_data       = et_data       ).
 
 * ---------------------------------------------------------------------
@@ -150,7 +155,8 @@ CLASS zcl_wd_csv IMPLEMENTATION.
       lv_str_length TYPE i,
       lv_str_pos    TYPE i,
       lv_str_pos_p1 TYPE i,
-      lv_component  TYPE i VALUE 1,
+      lv_component  TYPE i,
+      lv_first_line TYPE abap_bool VALUE abap_true,
       lv_delimited  TYPE abap_bool,
       lv_in_cell    TYPE abap_bool,
       ld_str_struc  TYPE REF TO data.
@@ -162,6 +168,7 @@ CLASS zcl_wd_csv IMPLEMENTATION.
     DEFINE append_line.
 **********************************************************************
       APPEND INITIAL LINE TO et_data ASSIGNING <ls_data_exp>.
+      lv_component = 1.
       ASSIGN COMPONENT lv_component OF STRUCTURE <ls_data_str> TO <lv_data>.
 **********************************************************************
     END-OF-DEFINITION.
@@ -198,6 +205,9 @@ CLASS zcl_wd_csv IMPLEMENTATION.
     append_line.
 
 * ---------------------------------------------------------------------
+
+
+* ---------------------------------------------------------------------
     DO.
       CASE iv_csv_string+lv_str_pos(1).
         WHEN mv_delimiter.
@@ -228,12 +238,17 @@ CLASS zcl_wd_csv IMPLEMENTATION.
           ENDIF.
           CASE strlen( mv_newline ).
             WHEN 1.
+              IF lv_first_line  = abap_true
+              AND iv_has_header = abap_true.
+                lv_first_line = abap_false.
+                continue_loop.
+              ENDIF.
               lv_str_pos_p1 = lv_str_pos + 1.
               IF iv_csv_string+lv_str_pos_p1 CO space.
                 move_data. EXIT.
               ENDIF.
-              lv_component = 1.
               move_data. append_line.
+              lv_first_line = abap_false.
             WHEN 2.
               continue_loop.
             WHEN OTHERS.
@@ -242,11 +257,18 @@ CLASS zcl_wd_csv IMPLEMENTATION.
           IF lv_delimited = abap_true.
             append_character. continue_loop.
           ENDIF.
+          IF lv_first_line  = abap_true
+          AND iv_has_header = abap_true.
+            lv_first_line = abap_false.
+            FREE <ls_data_str>.
+            lv_component = 1.
+            ASSIGN COMPONENT lv_component OF STRUCTURE <ls_data_str> TO <lv_data>.
+            continue_loop.
+          ENDIF.
           lv_str_pos_p1 = lv_str_pos + 1.
           IF iv_csv_string+lv_str_pos_p1 CO space.
             move_data. EXIT.
           ENDIF.
-          lv_component = 1.
           move_data. append_line.
         WHEN ` `.
           IF lv_delimited = abap_true
