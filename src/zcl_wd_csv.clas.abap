@@ -7,40 +7,12 @@ CLASS zcl_wd_csv DEFINITION PUBLIC CREATE PUBLIC.
     CONSTANTS:
       mc_default_separator TYPE mty_separator VALUE cl_abap_char_utilities=>horizontal_tab,
       mc_default_delimiter TYPE mty_delimiter VALUE '"',
-      mc_default_newline   TYPE mty_newline VALUE cl_abap_char_utilities=>cr_lf.
+      mc_default_newline   TYPE mty_newline   VALUE cl_abap_char_utilities=>cr_lf.
     METHODS:
       constructor IMPORTING iv_newline   TYPE mty_newline   DEFAULT mc_default_newline
                             iv_separator TYPE mty_separator DEFAULT mc_default_separator
                             iv_delimiter TYPE mty_delimiter DEFAULT mc_default_delimiter
                   RAISING   zcx_wd_csv_invalid_newline,
-      parse_file_appl IMPORTING iv_encoding    TYPE abap_encod DEFAULT '4110'
-                                iv_replacement TYPE abap_repl DEFAULT '#'
-                                iv_ignore_cerr TYPE abap_bool DEFAULT abap_true
-                                iv_has_header  TYPE abap_bool DEFAULT abap_false
-                                iv_path        TYPE string
-                      EXPORTING et_data        TYPE table
-                      RAISING   cx_sy_struct_creation
-                                cx_sy_file_open
-                                cx_sy_codepage_converter_init
-                                cx_sy_conversion_codepage
-                                cx_sy_file_authority
-                                cx_sy_file_io
-                                cx_sy_file_open_mode
-                                cx_sy_file_close
-                                cx_parameter_invalid_range
-                                cx_parameter_invalid_type,
-      parse_file_local IMPORTING iv_has_header  TYPE abap_bool DEFAULT abap_false
-                                 iv_encoding    TYPE abap_encod DEFAULT '4110'
-                                 iv_replacement TYPE abap_repl DEFAULT '#'
-                                 iv_ignore_cerr TYPE abap_bool DEFAULT abap_true
-                                 iv_path        TYPE string
-                       EXPORTING et_data        TYPE table
-                       RAISING   zcx_wd_csv_gui_upload_failed
-                                 cx_parameter_invalid_range
-                                 cx_sy_codepage_converter_init
-                                 cx_sy_conversion_codepage
-                                 cx_parameter_invalid_type
-                                 cx_sy_struct_creation,
       parse_string IMPORTING iv_has_header TYPE abap_bool DEFAULT abap_false
                              iv_csv_string TYPE string
                    EXPORTING et_data       TYPE table
@@ -53,44 +25,13 @@ CLASS zcl_wd_csv DEFINITION PUBLIC CREATE PUBLIC.
     METHODS:
       create_string_struc IMPORTING it_data             TYPE ANY TABLE
                           RETURNING VALUE(rd_str_struc) TYPE REF TO data
-                          RAISING   cx_sy_struct_creation,
-      decode_xstring IMPORTING iv_encoding    TYPE abap_encod
-                               iv_replacement TYPE abap_repl
-                               iv_ignore_cerr TYPE abap_bool
-                               iv_xstring     TYPE xstring
-                     EXPORTING ev_string      TYPE string
-                     RAISING   cx_parameter_invalid_range
-                               cx_sy_codepage_converter_init
-                               cx_sy_conversion_codepage
-                               cx_parameter_invalid_type,
-      read_file_appl IMPORTING iv_encoding    TYPE abap_encod
-                               iv_replacement TYPE abap_repl
-                               iv_ignore_cerr TYPE abap_bool
-                               iv_path        TYPE string
-                     EXPORTING ev_csv_string  TYPE string
-                     RAISING   cx_sy_file_open
-                               cx_sy_codepage_converter_init
-                               cx_sy_conversion_codepage
-                               cx_sy_file_authority
-                               cx_sy_file_io
-                               cx_sy_file_open_mode
-                               cx_sy_file_close,
-      read_file_local IMPORTING iv_encoding    TYPE abap_encod
-                                iv_replacement TYPE abap_repl
-                                iv_ignore_cerr TYPE abap_bool
-                                iv_path        TYPE string
-                      EXPORTING ev_csv_string  TYPE string
-                      RAISING   zcx_wd_csv_gui_upload_failed
-                                cx_parameter_invalid_range
-                                cx_sy_codepage_converter_init
-                                cx_sy_conversion_codepage
-                                cx_parameter_invalid_type.
+                          RAISING   cx_sy_struct_creation.
   PRIVATE SECTION.
 ENDCLASS.
 
 
 
-CLASS zcl_wd_csv IMPLEMENTATION.
+CLASS ZCL_WD_CSV IMPLEMENTATION.
 
 
   METHOD constructor.
@@ -136,128 +77,6 @@ CLASS zcl_wd_csv IMPLEMENTATION.
 * ---------------------------------------------------------------------
     lo_structdescr = cl_abap_structdescr=>create( lt_components_str ).
     CREATE DATA rd_str_struc TYPE HANDLE lo_structdescr.
-
-* ---------------------------------------------------------------------
-  ENDMETHOD.
-
-
-  METHOD parse_file_appl.
-* ---------------------------------------------------------------------
-    DATA:
-      lv_csv_string TYPE string.
-
-* ---------------------------------------------------------------------
-    read_file_appl( EXPORTING iv_encoding    = iv_encoding
-                              iv_replacement = iv_replacement
-                              iv_ignore_cerr = iv_ignore_cerr
-                              iv_path        = iv_path
-                    IMPORTING ev_csv_string  = lv_csv_string ).
-
-* ---------------------------------------------------------------------
-    parse_string( EXPORTING iv_has_header = iv_has_header
-                            iv_csv_string = lv_csv_string
-                  IMPORTING et_data       = et_data       ).
-
-* ---------------------------------------------------------------------
-  ENDMETHOD.
-
-
-  METHOD parse_file_local.
-* ---------------------------------------------------------------------
-    DATA:
-      lv_csv_string TYPE string.
-
-* ---------------------------------------------------------------------
-    read_file_local( EXPORTING iv_encoding    = iv_encoding
-                               iv_replacement = iv_replacement
-                               iv_ignore_cerr = iv_ignore_cerr
-                               iv_path        = iv_path
-                     IMPORTING ev_csv_string  = lv_csv_string ).
-
-* ---------------------------------------------------------------------
-    parse_string( EXPORTING iv_has_header = iv_has_header
-                            iv_csv_string = lv_csv_string
-                  IMPORTING et_data       = et_data       ).
-
-* ---------------------------------------------------------------------
-  ENDMETHOD.
-
-
-  METHOD decode_xstring.
-* ---------------------------------------------------------------------
-    cl_abap_conv_in_ce=>create( encoding    = iv_encoding
-                                replacement = iv_replacement
-                                ignore_cerr = iv_ignore_cerr )->convert( EXPORTING input = iv_xstring
-                                                                         IMPORTING data  = ev_string ).
-
-* ---------------------------------------------------------------------
-  ENDMETHOD.
-
-
-  METHOD read_file_appl.
-* ---------------------------------------------------------------------
-    DATA:
-      lv_xstring TYPE xstring.
-
-* ---------------------------------------------------------------------
-    OPEN DATASET iv_path FOR INPUT IN BINARY MODE.
-
-* ---------------------------------------------------------------------
-    READ DATASET iv_path INTO lv_xstring.
-
-* ---------------------------------------------------------------------
-    CLOSE DATASET iv_path.
-
-* ---------------------------------------------------------------------
-    decode_xstring( EXPORTING iv_encoding    = iv_encoding
-                              iv_replacement = iv_replacement
-                              iv_ignore_cerr = iv_ignore_cerr
-                              iv_xstring     = lv_xstring
-                    IMPORTING ev_string      = ev_csv_string  ).
-
-* ---------------------------------------------------------------------
-  ENDMETHOD.
-
-
-  METHOD read_file_local.
-* ---------------------------------------------------------------------
-    DATA:
-      lv_filelength TYPE i,
-      lt_data       TYPE solix_tab,
-      lv_xstring    TYPE xstring,
-      lo_conv       TYPE REF TO cl_abap_conv_in_ce.
-
-* ---------------------------------------------------------------------
-    cl_gui_frontend_services=>gui_upload( EXPORTING  filename   = iv_path
-                                                     filetype   = 'BIN'
-                                          IMPORTING  filelength = lv_filelength
-                                          CHANGING   data_tab   = lt_data
-                                          EXCEPTIONS OTHERS     = 19            ).
-    IF sy-subrc <> 0.
-      RAISE EXCEPTION TYPE zcx_wd_csv_gui_upload_failed
-        EXPORTING
-          textid = VALUE #( msgid = sy-msgid
-                            msgno = sy-msgno
-                            attr1 = sy-msgv1
-                            attr2 = sy-msgv2
-                            attr3 = sy-msgv3
-                            attr4 = sy-msgv4 ).
-    ENDIF.
-
-* ---------------------------------------------------------------------
-    lv_xstring = cl_bcs_convert=>solix_to_xstring( it_solix = lt_data
-                                                   iv_size  = lv_filelength ).
-
-* ---------------------------------------------------------------------
-    " free up some memory
-    FREE lt_data.
-
-* ---------------------------------------------------------------------
-    decode_xstring( EXPORTING iv_encoding    = iv_encoding
-                              iv_replacement = iv_replacement
-                              iv_ignore_cerr = iv_ignore_cerr
-                              iv_xstring     = lv_xstring
-                    IMPORTING ev_string      = ev_csv_string  ).
 
 * ---------------------------------------------------------------------
   ENDMETHOD.
@@ -402,5 +221,4 @@ CLASS zcl_wd_csv IMPLEMENTATION.
 
 * ---------------------------------------------------------------------
   ENDMETHOD.
-
 ENDCLASS.
