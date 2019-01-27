@@ -163,7 +163,7 @@ CLASS ZCL_WD_CSV_FILE IMPLEMENTATION.
                                                      filetype   = 'BIN'
                                           IMPORTING  filelength = lv_filelength
                                           CHANGING   data_tab   = lt_data
-                                          EXCEPTIONS OTHERS     = 19            ).
+                                          EXCEPTIONS OTHERS     = 1             ).
     IF sy-subrc <> 0.
       RAISE EXCEPTION TYPE zcx_wd_csv_gui_upload_failed
         EXPORTING

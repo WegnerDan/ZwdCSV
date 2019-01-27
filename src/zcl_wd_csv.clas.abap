@@ -16,7 +16,10 @@ CLASS zcl_wd_csv DEFINITION PUBLIC CREATE PUBLIC.
       parse_string IMPORTING iv_has_header TYPE abap_bool DEFAULT abap_false
                              iv_csv_string TYPE string
                    EXPORTING et_data       TYPE table
-                   RAISING   cx_sy_struct_creation.
+                   RAISING   cx_sy_struct_creation,
+      generate_string IMPORTING iv_with_header TYPE abap_bool DEFAULT abap_false
+                                it_data        TYPE table
+                      EXPORTING ev_csv_string  TYPE string.
   PROTECTED SECTION.
     DATA:
       mv_separator TYPE mty_separator,
@@ -25,20 +28,24 @@ CLASS zcl_wd_csv DEFINITION PUBLIC CREATE PUBLIC.
     METHODS:
       create_string_struc IMPORTING it_data             TYPE ANY TABLE
                           RETURNING VALUE(rd_str_struc) TYPE REF TO data
-                          RAISING   cx_sy_struct_creation.
+                          RAISING   cx_sy_struct_creation,
+      generate_cell IMPORTING iv_fieldname   TYPE string
+                              iv_fieldtype   TYPE REF TO cl_abap_datadescr
+                              iv_data        TYPE any
+                    RETURNING VALUE(rv_cell) TYPE string.
   PRIVATE SECTION.
 ENDCLASS.
 
 
 
-CLASS ZCL_WD_CSV IMPLEMENTATION.
+CLASS zcl_wd_csv IMPLEMENTATION.
 
 
   METHOD constructor.
 * ---------------------------------------------------------------------
     " newline can either be a linefeed or carriage return and linefeed (two chars)
-    CASE strlen( iv_newline ).
-      WHEN 1 OR 2.
+    CASE iv_newline.
+      WHEN cl_abap_char_utilities=>cr_lf OR cl_abap_char_utilities=>cr_lf+1(1).
         mv_newline = iv_newline.
       WHEN OTHERS.
         RAISE EXCEPTION TYPE zcx_wd_csv_invalid_newline.
@@ -58,9 +65,9 @@ CLASS ZCL_WD_CSV IMPLEMENTATION.
     " as the line type of the export table
 * ---------------------------------------------------------------------
     DATA:
-      lt_components     TYPE abap_component_view_tab,
       lo_tabledescr     TYPE REF TO cl_abap_tabledescr,
       lo_structdescr    TYPE REF TO cl_abap_structdescr,
+      lt_components     TYPE abap_component_view_tab,
       lt_components_str TYPE cl_abap_structdescr=>component_table.
 
 * ---------------------------------------------------------------------
@@ -77,6 +84,105 @@ CLASS ZCL_WD_CSV IMPLEMENTATION.
 * ---------------------------------------------------------------------
     lo_structdescr = cl_abap_structdescr=>create( lt_components_str ).
     CREATE DATA rd_str_struc TYPE HANDLE lo_structdescr.
+
+* ---------------------------------------------------------------------
+  ENDMETHOD.
+
+
+  METHOD generate_cell.
+* ---------------------------------------------------------------------
+    DATA:
+      lv_delimit TYPE abap_bool.
+
+* ---------------------------------------------------------------------
+    rv_cell = iv_data.
+
+* ---------------------------------------------------------------------
+    " escape quotes
+    IF find( val = rv_cell sub = '"' ) >= 0.
+      lv_delimit = abap_true.
+      rv_cell = replace( val  = rv_cell
+                         sub  = '"'
+                         with = '""'    ).
+    ENDIF.
+
+* ---------------------------------------------------------------------
+    " if the cell contains a separator or any newline character, it needs to be delimited
+    IF lv_delimit = abap_false
+    AND (    find( val = rv_cell sub = mv_separator                       ) >= 0
+          OR find( val = rv_cell sub = cl_abap_char_utilities=>cr_lf      ) >= 0
+          OR find( val = rv_cell sub = cl_abap_char_utilities=>cr_lf+0(1) ) >= 0
+          OR find( val = rv_cell sub = cl_abap_char_utilities=>cr_lf+1(1) ) >= 0 ).
+      lv_delimit = abap_true.
+    ENDIF.
+
+* ---------------------------------------------------------------------
+    IF lv_delimit = abap_true.
+      rv_cell = mv_delimiter && rv_cell && mv_delimiter.
+    ENDIF.
+
+* ---------------------------------------------------------------------
+  ENDMETHOD.
+
+
+  METHOD generate_string.
+* ---------------------------------------------------------------------
+    DATA:
+      lo_tabledescr    TYPE REF TO cl_abap_tabledescr,
+      lo_structdescr   TYPE REF TO cl_abap_structdescr,
+      lt_components    TYPE abap_component_view_tab,
+      lv_start_newline TYPE abap_bool.
+    FIELD-SYMBOLS:
+      <ls_component> TYPE abap_simple_componentdescr,
+      <ls_data>      TYPE any,
+      <lv_data>      TYPE data.
+
+* ---------------------------------------------------------------------
+    FREE ev_csv_string.
+
+* ---------------------------------------------------------------------
+    lo_tabledescr ?= cl_abap_typedescr=>describe_by_data( it_data ).
+    lo_structdescr ?= lo_tabledescr->get_table_line_type( ).
+    lt_components = lo_structdescr->get_included_view( ).
+
+* ---------------------------------------------------------------------
+    IF iv_with_header = abap_true.
+      LOOP AT lt_components ASSIGNING <ls_component>.
+        IF ev_csv_string IS INITIAL.
+          ev_csv_string = generate_cell( iv_fieldname = <ls_component>-name
+                                         iv_fieldtype = <ls_component>-type
+                                         iv_data      = <ls_component>-name ).
+        ELSE.
+          ev_csv_string = ev_csv_string && mv_separator && generate_cell( iv_fieldname = <ls_component>-name
+                                                                          iv_fieldtype = <ls_component>-type
+                                                                          iv_data      = <ls_component>-name ).
+        ENDIF.
+      ENDLOOP.
+      ev_csv_string = ev_csv_string && mv_newline.
+    ENDIF.
+
+* ---------------------------------------------------------------------
+    lv_start_newline = abap_true.
+
+* ---------------------------------------------------------------------
+    LOOP AT it_data ASSIGNING <ls_data>.
+      LOOP AT lt_components ASSIGNING <ls_component>.
+        ASSIGN COMPONENT <ls_component>-name OF STRUCTURE <ls_data> TO <lv_data>.
+        CASE lv_start_newline.
+          WHEN abap_true.
+            lv_start_newline = abap_false.
+            ev_csv_string = ev_csv_string && generate_cell( iv_fieldname = <ls_component>-name
+                                                            iv_fieldtype = <ls_component>-type
+                                                            iv_data      = <lv_data>           ).
+          WHEN abap_false.
+            ev_csv_string = ev_csv_string && mv_separator && generate_cell( iv_fieldname = <ls_component>-name
+                                                                            iv_fieldtype = <ls_component>-type
+                                                                            iv_data      = <lv_data>           ).
+        ENDCASE.
+      ENDLOOP.
+      ev_csv_string = ev_csv_string && mv_newline.
+      lv_start_newline = abap_true.
+    ENDLOOP.
 
 * ---------------------------------------------------------------------
   ENDMETHOD.
@@ -221,4 +327,6 @@ CLASS ZCL_WD_CSV IMPLEMENTATION.
 
 * ---------------------------------------------------------------------
   ENDMETHOD.
+
+
 ENDCLASS.
