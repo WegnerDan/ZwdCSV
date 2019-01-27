@@ -12,9 +12,9 @@ CLASS zcl_wd_csv_file DEFINITION PUBLIC INHERITING FROM zcl_wd_csv CREATE PUBLIC
                                 iv_path       TYPE string
                       EXPORTING et_data       TYPE table
                       RAISING   cx_sy_struct_creation
+                                cx_sy_conversion_error
                                 cx_sy_file_open
                                 cx_sy_codepage_converter_init
-                                cx_sy_conversion_codepage
                                 cx_sy_file_authority
                                 cx_sy_file_io
                                 cx_sy_file_open_mode
@@ -25,9 +25,9 @@ CLASS zcl_wd_csv_file DEFINITION PUBLIC INHERITING FROM zcl_wd_csv CREATE PUBLIC
                                  iv_path       TYPE string
                        EXPORTING et_data       TYPE table
                        RAISING   zcx_wd_csv_gui_upload_failed
+                                 cx_sy_conversion_error
                                  cx_parameter_invalid_range
                                  cx_sy_codepage_converter_init
-                                 cx_sy_conversion_codepage
                                  cx_parameter_invalid_type
                                  cx_sy_struct_creation,
       generate_file_appl IMPORTING iv_with_header TYPE abap_bool DEFAULT abap_false

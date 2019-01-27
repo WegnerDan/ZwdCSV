@@ -16,7 +16,8 @@ CLASS zcl_wd_csv DEFINITION PUBLIC CREATE PUBLIC.
       parse_string IMPORTING iv_has_header TYPE abap_bool DEFAULT abap_false
                              iv_csv_string TYPE string
                    EXPORTING et_data       TYPE table
-                   RAISING   cx_sy_struct_creation,
+                   RAISING   cx_sy_struct_creation
+                             cx_sy_conversion_error,
       generate_string IMPORTING iv_with_header TYPE abap_bool DEFAULT abap_false
                                 it_data        TYPE table
                       EXPORTING ev_csv_string  TYPE string.
