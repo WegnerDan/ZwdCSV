@@ -308,6 +308,11 @@ CLASS zcl_wd_csv IMPLEMENTATION.
               ENDIF.
               lv_str_pos_p1 = lv_str_pos + 1.
               IF iv_csv_string+lv_str_pos_p1 CO space.
+                IF lv_component < ls_str_struc-columns.
+                  RAISE EXCEPTION TYPE zcx_wd_csv_too_few_columns
+                    EXPORTING
+                      line = lv_curr_line.
+                ENDIF.
                 move_data. EXIT.
               ENDIF.
               move_data. append_line.
@@ -335,6 +340,11 @@ CLASS zcl_wd_csv IMPLEMENTATION.
           ENDIF.
           lv_str_pos_p1 = lv_str_pos + 1.
           IF iv_csv_string+lv_str_pos_p1 CO space.
+            IF lv_component < ls_str_struc-columns.
+              RAISE EXCEPTION TYPE zcx_wd_csv_too_few_columns
+                EXPORTING
+                  line = lv_curr_line.
+            ENDIF.
             move_data. EXIT.
           ENDIF.
           move_data. append_line.
@@ -351,6 +361,11 @@ CLASS zcl_wd_csv IMPLEMENTATION.
           append_character.
       ENDCASE.
       IF ( lv_str_pos + 1 ) = lv_str_length.
+        IF lv_component < ls_str_struc-columns.
+          RAISE EXCEPTION TYPE zcx_wd_csv_too_few_columns
+            EXPORTING
+              line = lv_curr_line.
+        ENDIF.
         move_data.
         EXIT.
       ENDIF.
