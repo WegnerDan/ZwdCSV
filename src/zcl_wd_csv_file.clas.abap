@@ -4,10 +4,10 @@ CLASS zcl_wd_csv_file DEFINITION PUBLIC INHERITING FROM zcl_wd_csv CREATE PUBLIC
       constructor IMPORTING iv_encoding    TYPE abap_encod    DEFAULT '4110'
                             iv_replacement TYPE abap_repl     DEFAULT '#'
                             iv_ignore_cerr TYPE abap_bool     DEFAULT abap_true
-                            iv_newline     TYPE mty_newline   DEFAULT mc_default_newline
+                            iv_endofline   TYPE mty_endofline DEFAULT mc_default_endofline
                             iv_separator   TYPE mty_separator DEFAULT mc_default_separator
                             iv_delimiter   TYPE mty_delimiter DEFAULT mc_default_delimiter
-                  RAISING   zcx_wd_csv_invalid_newline,
+                  RAISING   zcx_wd_csv_invalid_endofline,
       parse_file_appl IMPORTING iv_has_header TYPE abap_bool DEFAULT abap_false
                                 iv_path       TYPE string
                       EXPORTING et_data       TYPE table
@@ -20,7 +20,9 @@ CLASS zcl_wd_csv_file DEFINITION PUBLIC INHERITING FROM zcl_wd_csv CREATE PUBLIC
                                 cx_sy_file_open_mode
                                 cx_sy_file_close
                                 cx_parameter_invalid_range
-                                cx_parameter_invalid_type,
+                                cx_parameter_invalid_type
+                                zcx_wd_csv_too_many_columns
+                                zcx_wd_csv_too_few_columns,
       parse_file_local IMPORTING iv_has_header TYPE abap_bool DEFAULT abap_false
                                  iv_path       TYPE string
                        EXPORTING et_data       TYPE table
@@ -29,7 +31,9 @@ CLASS zcl_wd_csv_file DEFINITION PUBLIC INHERITING FROM zcl_wd_csv CREATE PUBLIC
                                  cx_parameter_invalid_range
                                  cx_sy_codepage_converter_init
                                  cx_parameter_invalid_type
-                                 cx_sy_struct_creation,
+                                 cx_sy_struct_creation
+                                 zcx_wd_csv_too_many_columns
+                                 zcx_wd_csv_too_few_columns,
       generate_file_appl IMPORTING iv_with_header TYPE abap_bool DEFAULT abap_false
                                    it_data        TYPE table
                                    iv_path        TYPE string
@@ -112,7 +116,7 @@ CLASS zcl_wd_csv_file IMPLEMENTATION.
 
   METHOD constructor.
 * ---------------------------------------------------------------------
-    super->constructor( iv_newline   = iv_newline
+    super->constructor( iv_endofline   = iv_endofline
                         iv_separator = iv_separator
                         iv_delimiter = iv_delimiter ).
 
@@ -312,7 +316,7 @@ CLASS zcl_wd_csv_file IMPLEMENTATION.
 
 * ---------------------------------------------------------------------
     encode_string( EXPORTING iv_string  = iv_csv_string
-                    IMPORTING ev_xstring = lv_csv_xstring ).
+                   IMPORTING ev_xstring = lv_csv_xstring ).
 
 * ---------------------------------------------------------------------
     lv_filelength = xstrlen( lv_csv_xstring ).

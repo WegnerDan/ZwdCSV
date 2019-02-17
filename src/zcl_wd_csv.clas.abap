@@ -3,32 +3,39 @@ CLASS zcl_wd_csv DEFINITION PUBLIC CREATE PUBLIC.
     TYPES:
       mty_separator TYPE c LENGTH 1,
       mty_delimiter TYPE c LENGTH 1,
-      mty_newline   TYPE string.
+      mty_endofline TYPE string. " length can be 1 or 2 characters
     CONSTANTS:
       mc_default_separator TYPE mty_separator VALUE cl_abap_char_utilities=>horizontal_tab,
       mc_default_delimiter TYPE mty_delimiter VALUE '"',
-      mc_default_newline   TYPE mty_newline   VALUE cl_abap_char_utilities=>cr_lf.
+      mc_default_endofline TYPE mty_endofline   VALUE cl_abap_char_utilities=>cr_lf.
     METHODS:
-      constructor IMPORTING iv_newline   TYPE mty_newline   DEFAULT mc_default_newline
+      constructor IMPORTING iv_endofline TYPE mty_endofline DEFAULT mc_default_endofline
                             iv_separator TYPE mty_separator DEFAULT mc_default_separator
                             iv_delimiter TYPE mty_delimiter DEFAULT mc_default_delimiter
-                  RAISING   zcx_wd_csv_invalid_newline,
+                  RAISING   zcx_wd_csv_invalid_endofline,
       parse_string IMPORTING iv_has_header TYPE abap_bool DEFAULT abap_false
                              iv_csv_string TYPE string
                    EXPORTING et_data       TYPE table
                    RAISING   cx_sy_struct_creation
-                             cx_sy_conversion_error,
+                             cx_sy_conversion_error
+                             zcx_wd_csv_too_many_columns
+                             zcx_wd_csv_too_few_columns,
       generate_string IMPORTING iv_with_header TYPE abap_bool DEFAULT abap_false
                                 it_data        TYPE table
                       EXPORTING ev_csv_string  TYPE string.
   PROTECTED SECTION.
+    TYPES:
+      BEGIN OF mty_s_string_struc,
+        ref     TYPE REF TO data,
+        columns TYPE i,
+      END OF mty_s_string_struc.
     DATA:
       mv_separator TYPE mty_separator,
       mv_delimiter TYPE mty_delimiter,
-      mv_newline   TYPE mty_newline.
+      mv_endofline TYPE mty_endofline.
     METHODS:
       create_string_struc IMPORTING it_data             TYPE ANY TABLE
-                          RETURNING VALUE(rd_str_struc) TYPE REF TO data
+                          RETURNING VALUE(rs_str_struc) TYPE mty_s_string_struc
                           RAISING   cx_sy_struct_creation,
       generate_cell IMPORTING iv_fieldname   TYPE string
                               iv_fieldtype   TYPE REF TO cl_abap_datadescr
@@ -44,12 +51,14 @@ CLASS zcl_wd_csv IMPLEMENTATION.
 
   METHOD constructor.
 * ---------------------------------------------------------------------
-    " newline can either be a linefeed or carriage return and linefeed (two chars)
-    CASE iv_newline.
+    " endofline can either be a linefeed (one char) or carriage return and linefeed (two chars)
+    CASE iv_endofline.
       WHEN cl_abap_char_utilities=>cr_lf OR cl_abap_char_utilities=>cr_lf+1(1).
-        mv_newline = iv_newline.
+        mv_endofline = iv_endofline.
       WHEN OTHERS.
-        RAISE EXCEPTION TYPE zcx_wd_csv_invalid_newline.
+        RAISE EXCEPTION TYPE zcx_wd_csv_invalid_endofline
+          EXPORTING
+            end_of_line = iv_endofline.
     ENDCASE.
 
 * ---------------------------------------------------------------------
@@ -83,8 +92,9 @@ CLASS zcl_wd_csv IMPLEMENTATION.
     ENDLOOP.
 
 * ---------------------------------------------------------------------
+    rs_str_struc-columns = lines( lt_components_str ).
     lo_structdescr = cl_abap_structdescr=>create( lt_components_str ).
-    CREATE DATA rd_str_struc TYPE HANDLE lo_structdescr.
+    CREATE DATA rs_str_struc-ref TYPE HANDLE lo_structdescr.
 
 * ---------------------------------------------------------------------
   ENDMETHOD.
@@ -159,7 +169,7 @@ CLASS zcl_wd_csv IMPLEMENTATION.
                                                                           iv_data      = <ls_component>-name ).
         ENDIF.
       ENDLOOP.
-      ev_csv_string = ev_csv_string && mv_newline.
+      ev_csv_string = ev_csv_string && mv_endofline.
     ENDIF.
 
 * ---------------------------------------------------------------------
@@ -181,7 +191,7 @@ CLASS zcl_wd_csv IMPLEMENTATION.
                                                                             iv_data      = <lv_data>           ).
         ENDCASE.
       ENDLOOP.
-      ev_csv_string = ev_csv_string && mv_newline.
+      ev_csv_string = ev_csv_string && mv_endofline.
       lv_start_newline = abap_true.
     ENDLOOP.
 
@@ -195,11 +205,12 @@ CLASS zcl_wd_csv IMPLEMENTATION.
       lv_str_length TYPE i,
       lv_str_pos    TYPE i,
       lv_str_pos_p1 TYPE i,
+      lv_curr_line  TYPE i,
       lv_component  TYPE i,
       lv_first_line TYPE abap_bool VALUE abap_true,
       lv_delimited  TYPE abap_bool,
       lv_in_cell    TYPE abap_bool,
-      ld_str_struc  TYPE REF TO data.
+      ls_str_struc  TYPE mty_s_string_struc.
     FIELD-SYMBOLS:
       <ls_data_str> TYPE any,  " temporary structure with string types components
       <ls_data_exp> TYPE any,  " line of export table
@@ -208,6 +219,11 @@ CLASS zcl_wd_csv IMPLEMENTATION.
     DEFINE append_line.
 **********************************************************************
       APPEND INITIAL LINE TO et_data ASSIGNING <ls_data_exp>.
+      IF iv_has_header = abap_true.
+        lv_curr_line = sy-tabix + 1.
+      ELSE.
+        lv_curr_line = sy-tabix.
+      ENDIF.
       lv_component = 1.
       ASSIGN COMPONENT lv_component OF STRUCTURE <ls_data_str> TO <lv_data>.
 **********************************************************************
@@ -234,8 +250,8 @@ CLASS zcl_wd_csv IMPLEMENTATION.
     END-OF-DEFINITION.
 
 * ---------------------------------------------------------------------
-    ld_str_struc = create_string_struc( et_data ).
-    ASSIGN ld_str_struc->* TO <ls_data_str>.
+    ls_str_struc = create_string_struc( et_data ).
+    ASSIGN ls_str_struc-ref->* TO <ls_data_str>.
 
 * ---------------------------------------------------------------------
     lv_str_length = strlen( iv_csv_string ).
@@ -269,11 +285,16 @@ CLASS zcl_wd_csv IMPLEMENTATION.
           lv_in_cell = abap_false.
           lv_component = lv_component + 1.
           ASSIGN COMPONENT lv_component OF STRUCTURE <ls_data_str> TO <lv_data>.
-        WHEN mv_newline(1).
+          IF sy-subrc <> 0.
+            RAISE EXCEPTION TYPE zcx_wd_csv_too_many_columns
+              EXPORTING
+                line = lv_curr_line.
+          ENDIF.
+        WHEN mv_endofline(1).
           IF lv_delimited = abap_true.
             append_character. continue_loop.
           ENDIF.
-          CASE strlen( mv_newline ).
+          CASE strlen( mv_endofline ).
             WHEN 1.
               IF lv_first_line  = abap_true
               AND iv_has_header = abap_true.
@@ -290,7 +311,7 @@ CLASS zcl_wd_csv IMPLEMENTATION.
               continue_loop.
             WHEN OTHERS.
           ENDCASE.
-        WHEN mv_newline+1(1).
+        WHEN mv_endofline+1(1).
           IF lv_delimited = abap_true.
             append_character. continue_loop.
           ENDIF.
