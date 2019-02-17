@@ -10,7 +10,7 @@ CLASS zcl_wd_csv_file DEFINITION PUBLIC INHERITING FROM zcl_wd_csv CREATE PUBLIC
                   RAISING   zcx_wd_csv_invalid_endofline,
       parse_file_appl IMPORTING iv_has_header TYPE abap_bool DEFAULT abap_false
                                 iv_path       TYPE string
-                      EXPORTING et_data       TYPE table
+                      EXPORTING et_data       TYPE STANDARD TABLE
                       RAISING   cx_sy_struct_creation
                                 cx_sy_conversion_error
                                 cx_sy_file_open
@@ -25,7 +25,7 @@ CLASS zcl_wd_csv_file DEFINITION PUBLIC INHERITING FROM zcl_wd_csv CREATE PUBLIC
                                 zcx_wd_csv_too_few_columns,
       parse_file_local IMPORTING iv_has_header TYPE abap_bool DEFAULT abap_false
                                  iv_path       TYPE string
-                       EXPORTING et_data       TYPE table
+                       EXPORTING et_data       TYPE STANDARD TABLE
                        RAISING   zcx_wd_csv_gui_upload_failed
                                  cx_sy_conversion_error
                                  cx_parameter_invalid_range
@@ -35,7 +35,7 @@ CLASS zcl_wd_csv_file DEFINITION PUBLIC INHERITING FROM zcl_wd_csv CREATE PUBLIC
                                  zcx_wd_csv_too_many_columns
                                  zcx_wd_csv_too_few_columns,
       generate_file_appl IMPORTING iv_with_header TYPE abap_bool DEFAULT abap_false
-                                   it_data        TYPE table
+                                   it_data        TYPE STANDARD TABLE
                                    iv_path        TYPE string
                          RAISING   cx_parameter_invalid_range
                                    cx_sy_codepage_converter_init
@@ -47,7 +47,7 @@ CLASS zcl_wd_csv_file DEFINITION PUBLIC INHERITING FROM zcl_wd_csv CREATE PUBLIC
                                    cx_sy_file_open_mode
                                    cx_sy_file_close,
       generate_file_local IMPORTING iv_with_header TYPE abap_bool DEFAULT abap_false
-                                    it_data        TYPE table
+                                    it_data        TYPE STANDARD TABLE
                                     iv_path        TYPE string
                           RAISING   zcx_wd_csv_gui_download_failed
                                     cx_parameter_invalid_range
@@ -111,7 +111,7 @@ ENDCLASS.
 
 
 
-CLASS zcl_wd_csv_file IMPLEMENTATION.
+CLASS ZCL_WD_CSV_FILE IMPLEMENTATION.
 
 
   METHOD constructor.

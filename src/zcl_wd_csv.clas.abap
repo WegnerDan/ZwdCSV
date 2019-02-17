@@ -15,13 +15,13 @@ CLASS zcl_wd_csv DEFINITION PUBLIC CREATE PUBLIC.
                   RAISING   zcx_wd_csv_invalid_endofline,
       parse_string IMPORTING iv_has_header TYPE abap_bool DEFAULT abap_false
                              iv_csv_string TYPE string
-                   EXPORTING et_data       TYPE table
+                   EXPORTING et_data       TYPE STANDARD TABLE
                    RAISING   cx_sy_struct_creation
                              cx_sy_conversion_error
                              zcx_wd_csv_too_many_columns
                              zcx_wd_csv_too_few_columns,
       generate_string IMPORTING iv_with_header TYPE abap_bool DEFAULT abap_false
-                                it_data        TYPE table
+                                it_data        TYPE STANDARD TABLE
                       EXPORTING ev_csv_string  TYPE string.
   PROTECTED SECTION.
     TYPES:
@@ -301,6 +301,11 @@ CLASS zcl_wd_csv IMPLEMENTATION.
                 lv_first_line = abap_false.
                 continue_loop.
               ENDIF.
+              IF lv_component < ls_str_struc-columns.
+                RAISE EXCEPTION TYPE zcx_wd_csv_too_few_columns
+                  EXPORTING
+                    line = lv_curr_line.
+              ENDIF.
               lv_str_pos_p1 = lv_str_pos + 1.
               IF iv_csv_string+lv_str_pos_p1 CO space.
                 move_data. EXIT.
@@ -322,6 +327,11 @@ CLASS zcl_wd_csv IMPLEMENTATION.
             lv_component = 1.
             ASSIGN COMPONENT lv_component OF STRUCTURE <ls_data_str> TO <lv_data>.
             continue_loop.
+          ENDIF.
+          IF lv_component < ls_str_struc-columns.
+            RAISE EXCEPTION TYPE zcx_wd_csv_too_few_columns
+              EXPORTING
+                line = lv_curr_line.
           ENDIF.
           lv_str_pos_p1 = lv_str_pos + 1.
           IF iv_csv_string+lv_str_pos_p1 CO space.
