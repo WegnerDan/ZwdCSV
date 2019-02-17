@@ -4,7 +4,7 @@ CLASS zcl_wd_csv_file DEFINITION PUBLIC INHERITING FROM zcl_wd_csv CREATE PUBLIC
       constructor IMPORTING iv_encoding    TYPE abap_encod    DEFAULT '4110'
                             iv_replacement TYPE abap_repl     DEFAULT '#'
                             iv_ignore_cerr TYPE abap_bool     DEFAULT abap_true
-                            iv_endofline   TYPE mty_endofline DEFAULT mc_default_endofline
+                            iv_endofline   TYPE csequence     DEFAULT mc_endofline_cr_lf
                             iv_separator   TYPE mty_separator DEFAULT mc_default_separator
                             iv_delimiter   TYPE mty_delimiter DEFAULT mc_default_delimiter
                   RAISING   zcx_wd_csv_invalid_endofline,
@@ -22,7 +22,8 @@ CLASS zcl_wd_csv_file DEFINITION PUBLIC INHERITING FROM zcl_wd_csv CREATE PUBLIC
                                 cx_parameter_invalid_range
                                 cx_parameter_invalid_type
                                 zcx_wd_csv_too_many_columns
-                                zcx_wd_csv_too_few_columns,
+                                zcx_wd_csv_too_few_columns
+                                zcx_wd_csv_mixed_endofline,
       parse_file_local IMPORTING iv_has_header TYPE abap_bool DEFAULT abap_false
                                  iv_path       TYPE string
                        EXPORTING et_data       TYPE STANDARD TABLE
@@ -33,7 +34,8 @@ CLASS zcl_wd_csv_file DEFINITION PUBLIC INHERITING FROM zcl_wd_csv CREATE PUBLIC
                                  cx_parameter_invalid_type
                                  cx_sy_struct_creation
                                  zcx_wd_csv_too_many_columns
-                                 zcx_wd_csv_too_few_columns,
+                                 zcx_wd_csv_too_few_columns
+                                 zcx_wd_csv_mixed_endofline,
       generate_file_appl IMPORTING iv_with_header TYPE abap_bool DEFAULT abap_false
                                    it_data        TYPE STANDARD TABLE
                                    iv_path        TYPE string
@@ -111,7 +113,7 @@ ENDCLASS.
 
 
 
-CLASS ZCL_WD_CSV_FILE IMPLEMENTATION.
+CLASS zcl_wd_csv_file IMPLEMENTATION.
 
 
   METHOD constructor.

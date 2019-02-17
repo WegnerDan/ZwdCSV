@@ -23,7 +23,9 @@ CLASS zcx_wd_csv_mixed_endofline IMPLEMENTATION.
 
 * ---------------------------------------------------------------------
     IF textid IS INITIAL.
-      if_t100_message~t100key = if_t100_message=>default_textid.
+      if_t100_message~t100key-msgid = 'ZWD_CSV'.
+      if_t100_message~t100key-msgno = '004'.
+      if_t100_message~t100key-attr1 = line.
     ELSE.
       if_t100_message~t100key = textid.
     ENDIF.
