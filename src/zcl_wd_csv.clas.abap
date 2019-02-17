@@ -288,6 +288,9 @@ CLASS zcl_wd_csv IMPLEMENTATION.
           lv_component = lv_component + 1.
           ASSIGN COMPONENT lv_component OF STRUCTURE <ls_data_str> TO <lv_data>.
           IF sy-subrc <> 0.
+            IF lv_first_line = abap_true.
+              lv_curr_line = 1.
+            ENDIF.
             RAISE EXCEPTION TYPE zcx_wd_csv_too_many_columns
               EXPORTING
                 line = lv_curr_line.
@@ -300,6 +303,11 @@ CLASS zcl_wd_csv IMPLEMENTATION.
           AND iv_has_header = abap_true.
             lv_first_line = abap_false.
             FREE <ls_data_str>.
+            IF lv_component < ls_str_struc-columns.
+              RAISE EXCEPTION TYPE zcx_wd_csv_too_few_columns
+                EXPORTING
+                  line = 1.
+            ENDIF.
             lv_component = 1.
             ASSIGN COMPONENT lv_component OF STRUCTURE <ls_data_str> TO <lv_data>.
             IF mv_endofline = mc_endofline_cr_lf.
