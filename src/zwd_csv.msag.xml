@@ -38,6 +38,18 @@
      <MSGNR>004</MSGNR>
      <TEXT>Unexpected End-Of-Line Character in Line &amp;1</TEXT>
     </T100>
+    <T100>
+     <SPRSL>E</SPRSL>
+     <ARBGB>ZWD_CSV</ARBGB>
+     <MSGNR>005</MSGNR>
+     <TEXT>Invalid Separator Character &amp;1</TEXT>
+    </T100>
+    <T100>
+     <SPRSL>E</SPRSL>
+     <ARBGB>ZWD_CSV</ARBGB>
+     <MSGNR>006</MSGNR>
+     <TEXT>Invalid Delimiter Character &amp;1</TEXT>
+    </T100>
    </T100>
   </asx:values>
  </asx:abap>

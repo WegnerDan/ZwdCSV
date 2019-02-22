@@ -7,7 +7,9 @@ CLASS zcl_wd_csv_file DEFINITION PUBLIC INHERITING FROM zcl_wd_csv CREATE PUBLIC
                             iv_endofline   TYPE csequence     DEFAULT mc_endofline_cr_lf
                             iv_separator   TYPE mty_separator DEFAULT mc_default_separator
                             iv_delimiter   TYPE mty_delimiter DEFAULT mc_default_delimiter
-                  RAISING   zcx_wd_csv_invalid_endofline,
+                  RAISING   zcx_wd_csv_invalid_endofline
+                            zcx_wd_csv_invalid_separator
+                            zcx_wd_csv_invalid_delimiter,
       parse_file_appl IMPORTING iv_has_header TYPE abap_bool DEFAULT abap_false
                                 iv_path       TYPE string
                       EXPORTING et_data       TYPE STANDARD TABLE
@@ -118,7 +120,7 @@ CLASS zcl_wd_csv_file IMPLEMENTATION.
 
   METHOD constructor.
 * ---------------------------------------------------------------------
-    super->constructor( iv_endofline   = iv_endofline
+    super->constructor( iv_endofline = iv_endofline
                         iv_separator = iv_separator
                         iv_delimiter = iv_delimiter ).
 
@@ -273,7 +275,7 @@ CLASS zcl_wd_csv_file IMPLEMENTATION.
 
 * ---------------------------------------------------------------------
     lv_csv_xstring = cl_bcs_convert=>solix_to_xstring( it_solix = lt_data
-                                                   iv_size  = lv_filelength ).
+                                                       iv_size  = lv_filelength ).
 
 * ---------------------------------------------------------------------
     " free up some memory

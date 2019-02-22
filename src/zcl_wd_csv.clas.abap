@@ -3,17 +3,19 @@ CLASS zcl_wd_csv DEFINITION PUBLIC CREATE PUBLIC.
     TYPES:
       mty_separator TYPE c LENGTH 1,
       mty_delimiter TYPE c LENGTH 1.
-
     CONSTANTS:
       mc_default_separator TYPE mty_separator VALUE cl_abap_char_utilities=>horizontal_tab,
       mc_default_delimiter TYPE mty_delimiter VALUE '"',
       mc_endofline_lf      TYPE c LENGTH 1    VALUE cl_abap_char_utilities=>newline,
-      mc_endofline_cr_lf   TYPE c LENGTH 2    VALUE cl_abap_char_utilities=>cr_lf.
+      mc_endofline_cr_lf   TYPE c LENGTH 2    VALUE cl_abap_char_utilities=>cr_lf,
+      mc_endofline_cr      TYPE c LENGTH 1    VALUE cl_abap_char_utilities=>cr_lf.
     METHODS:
       constructor IMPORTING iv_endofline TYPE csequence     DEFAULT mc_endofline_cr_lf
                             iv_separator TYPE mty_separator DEFAULT mc_default_separator
                             iv_delimiter TYPE mty_delimiter DEFAULT mc_default_delimiter
-                  RAISING   zcx_wd_csv_invalid_endofline,
+                  RAISING   zcx_wd_csv_invalid_endofline
+                            zcx_wd_csv_invalid_separator
+                            zcx_wd_csv_invalid_delimiter,
       parse_string IMPORTING iv_has_header TYPE abap_bool DEFAULT abap_false
                              iv_csv_string TYPE string
                    EXPORTING et_data       TYPE STANDARD TABLE
@@ -55,7 +57,7 @@ CLASS zcl_wd_csv IMPLEMENTATION.
 * ---------------------------------------------------------------------
     " endofline can either be a linefeed (one char) or carriage return and linefeed (two chars)
     CASE iv_endofline.
-      WHEN mc_endofline_lf OR mc_endofline_cr_lf.
+      WHEN mc_endofline_lf OR mc_endofline_cr_lf OR mc_endofline_cr.
         mv_endofline = iv_endofline.
       WHEN OTHERS.
         RAISE EXCEPTION TYPE zcx_wd_csv_invalid_endofline
@@ -64,8 +66,24 @@ CLASS zcl_wd_csv IMPLEMENTATION.
     ENDCASE.
 
 * ---------------------------------------------------------------------
-    mv_separator = iv_separator.
-    mv_delimiter = iv_delimiter.
+    IF  iv_separator IS NOT INITIAL
+    AND iv_separator NA sy-abcde.
+      mv_separator = iv_separator.
+    ELSE.
+      RAISE EXCEPTION TYPE zcx_wd_csv_invalid_separator
+        EXPORTING
+          separator = iv_separator.
+    ENDIF.
+
+* ---------------------------------------------------------------------
+    IF iv_delimiter = ''''
+    OR iv_delimiter = '"'.
+      mv_delimiter = iv_delimiter.
+    ELSE.
+      RAISE EXCEPTION TYPE zcx_wd_csv_invalid_delimiter
+        EXPORTING
+          delimiter = iv_delimiter.
+    ENDIF.
 
 * ---------------------------------------------------------------------
   ENDMETHOD.
@@ -112,11 +130,11 @@ CLASS zcl_wd_csv IMPLEMENTATION.
 
 * ---------------------------------------------------------------------
     " escape quotes
-    IF find( val = rv_cell sub = '"' ) >= 0.
+    IF find( val = rv_cell sub = mv_delimiter ) >= 0.
       lv_delimit = abap_true.
       rv_cell = replace( val  = rv_cell
-                         sub  = '"'
-                         with = '""'    ).
+                         sub  = mv_delimiter
+                         with = mv_delimiter && mv_delimiter ).
     ENDIF.
 
 * ---------------------------------------------------------------------
@@ -271,7 +289,7 @@ CLASS zcl_wd_csv IMPLEMENTATION.
               lv_delimited = abap_true.
             WHEN abap_true.
               IF ( lv_str_length - lv_str_pos ) >= 2 " make sure at least two characters are left in the string
-              AND iv_csv_string+lv_str_pos(2) = '""'.
+              AND iv_csv_string+lv_str_pos(2) = mv_delimiter && mv_delimiter.
                 " if the current csv cell is delimited and double double quotes are in it, add one of them to the abap cell
                 append_character.
                 lv_str_pos = lv_str_pos + 1.
@@ -318,7 +336,9 @@ CLASS zcl_wd_csv IMPLEMENTATION.
           IF (     mv_endofline = mc_endofline_cr_lf
                AND iv_csv_string+lv_str_pos(2) <> mc_endofline_cr_lf )
           OR (     mv_endofline = mc_endofline_lf
-               AND iv_csv_string+lv_str_pos(1) <> mc_endofline_lf    ).
+               AND iv_csv_string+lv_str_pos(1) <> mc_endofline_lf    )
+          OR (     mv_endofline = mc_endofline_cr
+               AND iv_csv_string+lv_str_pos(1) <> mc_endofline_cr    ).
             RAISE EXCEPTION TYPE zcx_wd_csv_mixed_endofline
               EXPORTING
                 line = lv_curr_line.
