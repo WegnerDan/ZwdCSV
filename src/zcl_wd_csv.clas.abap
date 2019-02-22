@@ -27,7 +27,18 @@ CLASS zcl_wd_csv DEFINITION PUBLIC CREATE PUBLIC.
                              zcx_wd_csv_mixed_endofline,
       generate_string IMPORTING iv_with_header TYPE abap_bool DEFAULT abap_false
                                 it_data        TYPE STANDARD TABLE
-                      EXPORTING ev_csv_string  TYPE string.
+                      EXPORTING ev_csv_string  TYPE string,
+      get_separator RETURNING VALUE(rv_separator) TYPE mty_separator,
+      set_separator IMPORTING iv_separator TYPE mty_separator DEFAULT mc_default_separator
+                    RAISING   zcx_wd_csv_invalid_separator,
+      get_endofline RETURNING VALUE(rv_endofline) TYPE string,
+      set_endofline IMPORTING iv_endofline TYPE csequence DEFAULT mc_endofline_cr_lf
+                    RAISING   zcx_wd_csv_invalid_endofline,
+      get_delimiter RETURNING VALUE(rv_delimiter) TYPE mty_delimiter,
+      set_delimiter IMPORTING iv_delimiter TYPE mty_delimiter DEFAULT mc_default_delimiter
+                    RAISING   zcx_wd_csv_invalid_delimiter,
+      get_conv_exit RETURNING VALUE(rv_conv_exit) TYPE abap_bool,
+      set_conv_exit IMPORTING iv_conv_exit TYPE abap_bool DEFAULT abap_true.
   PROTECTED SECTION.
     TYPES:
       BEGIN OF mty_s_string_struc,
@@ -41,9 +52,9 @@ CLASS zcl_wd_csv DEFINITION PUBLIC CREATE PUBLIC.
       END OF mty_s_comp_convex,
       mty_t_comp_convex TYPE SORTED TABLE OF mty_s_comp_convex WITH UNIQUE KEY name.
     DATA:
+      mv_endofline   TYPE string, " length can be 1 or 2 characters.
       mv_separator   TYPE mty_separator,
       mv_delimiter   TYPE mty_delimiter,
-      mv_endofline   TYPE string, " length can be 1 or 2 characters.
       mv_conv_exit   TYPE abap_bool,
       mv_ts_parse    TYPE timestampl,
       mv_ts_convex   TYPE timestampl,
@@ -67,44 +78,16 @@ CLASS zcl_wd_csv IMPLEMENTATION.
 
   METHOD constructor.
 * ---------------------------------------------------------------------
-    " endofline can either be a linefeed/carriage return (one char)
-    " or carriage return and linefeed (two chars)
-    CASE iv_endofline.
-      WHEN mc_endofline_lf OR mc_endofline_cr_lf OR mc_endofline_cr.
-        mv_endofline = iv_endofline.
-      WHEN OTHERS.
-        RAISE EXCEPTION TYPE zcx_wd_csv_invalid_endofline
-          EXPORTING
-            end_of_line = iv_endofline.
-    ENDCASE.
+    set_endofline( iv_endofline ).
 
 * ---------------------------------------------------------------------
-    IF  iv_separator IS NOT INITIAL
-    AND iv_separator NA sy-abcde.
-      mv_separator = iv_separator.
-    ELSE.
-      RAISE EXCEPTION TYPE zcx_wd_csv_invalid_separator
-        EXPORTING
-          separator = iv_separator.
-    ENDIF.
+    set_separator( iv_separator ).
 
 * ---------------------------------------------------------------------
-    IF iv_delimiter = ''''
-    OR iv_delimiter = '"'.
-      mv_delimiter = iv_delimiter.
-    ELSE.
-      RAISE EXCEPTION TYPE zcx_wd_csv_invalid_delimiter
-        EXPORTING
-          delimiter = iv_delimiter.
-    ENDIF.
+    set_delimiter( iv_delimiter ).
 
 * ---------------------------------------------------------------------
-    CASE iv_conv_exit.
-      WHEN abap_false.
-        mv_conv_exit = abap_false.
-      WHEN OTHERS.
-        mv_conv_exit = abap_true.
-    ENDCASE.
+    set_conv_exit( iv_conv_exit ).
 
 * ---------------------------------------------------------------------
   ENDMETHOD.
@@ -473,6 +456,98 @@ CLASS zcl_wd_csv IMPLEMENTATION.
       ENDIF.
       lv_str_pos = lv_str_pos + 1.
     ENDDO.
+
+* ---------------------------------------------------------------------
+  ENDMETHOD.
+
+
+  METHOD get_separator.
+* ---------------------------------------------------------------------
+    rv_separator = mv_separator.
+
+* ---------------------------------------------------------------------
+  ENDMETHOD.
+
+
+  METHOD set_separator.
+* ---------------------------------------------------------------------
+    IF  iv_separator IS NOT INITIAL
+    AND iv_separator NA sy-abcde.
+      mv_separator = iv_separator.
+    ELSE.
+      RAISE EXCEPTION TYPE zcx_wd_csv_invalid_separator
+        EXPORTING
+          separator = iv_separator.
+    ENDIF.
+
+* ---------------------------------------------------------------------
+  ENDMETHOD.
+
+
+  METHOD get_endofline.
+* ---------------------------------------------------------------------
+    rv_endofline = mv_endofline.
+
+* ---------------------------------------------------------------------
+  ENDMETHOD.
+
+
+  METHOD set_endofline.
+* ---------------------------------------------------------------------
+    " endofline can either be a linefeed/carriage return (one char)
+    " or carriage return and linefeed (two chars)
+    CASE iv_endofline.
+      WHEN mc_endofline_lf OR mc_endofline_cr_lf OR mc_endofline_cr.
+        mv_endofline = iv_endofline.
+      WHEN OTHERS.
+        RAISE EXCEPTION TYPE zcx_wd_csv_invalid_endofline
+          EXPORTING
+            end_of_line = iv_endofline.
+    ENDCASE.
+
+* ---------------------------------------------------------------------
+  ENDMETHOD.
+
+
+  METHOD get_delimiter.
+* ---------------------------------------------------------------------
+    rv_delimiter = mv_delimiter.
+
+* ---------------------------------------------------------------------
+  ENDMETHOD.
+
+
+  METHOD set_delimiter.
+* ---------------------------------------------------------------------
+    IF iv_delimiter = ''''
+    OR iv_delimiter = '"'.
+      mv_delimiter = iv_delimiter.
+    ELSE.
+      RAISE EXCEPTION TYPE zcx_wd_csv_invalid_delimiter
+        EXPORTING
+          delimiter = iv_delimiter.
+    ENDIF.
+
+* ---------------------------------------------------------------------
+  ENDMETHOD.
+
+
+  METHOD get_conv_exit.
+* ---------------------------------------------------------------------
+    rv_conv_exit = mv_conv_exit.
+
+* ---------------------------------------------------------------------
+  ENDMETHOD.
+
+
+  METHOD set_conv_exit.
+* ---------------------------------------------------------------------
+    CASE iv_conv_exit.
+      WHEN abap_false.
+        mv_conv_exit = abap_false.
+      WHEN OTHERS.
+        mv_conv_exit = abap_true.
+    ENDCASE.
 
 * ---------------------------------------------------------------------
   ENDMETHOD.
