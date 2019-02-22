@@ -13,6 +13,7 @@ CLASS zcl_wd_csv DEFINITION PUBLIC CREATE PUBLIC.
       constructor IMPORTING iv_endofline TYPE csequence     DEFAULT mc_endofline_cr_lf
                             iv_separator TYPE mty_separator DEFAULT mc_default_separator
                             iv_delimiter TYPE mty_delimiter DEFAULT mc_default_delimiter
+                            iv_conv_exit TYPE abap_bool     DEFAULT abap_false
                   RAISING   zcx_wd_csv_invalid_endofline
                             zcx_wd_csv_invalid_separator
                             zcx_wd_csv_invalid_delimiter,
@@ -32,15 +33,26 @@ CLASS zcl_wd_csv DEFINITION PUBLIC CREATE PUBLIC.
       BEGIN OF mty_s_string_struc,
         ref     TYPE REF TO data,
         columns TYPE i,
-      END OF mty_s_string_struc.
+      END OF mty_s_string_struc,
+      BEGIN OF mty_s_comp_convex,
+        name     TYPE string,
+        convexit TYPE convexit,
+        temp_fld TYPE REF TO data,
+      END OF mty_s_comp_convex,
+      mty_t_comp_convex TYPE SORTED TABLE OF mty_s_comp_convex WITH UNIQUE KEY name.
     DATA:
-      mv_separator TYPE mty_separator,
-      mv_delimiter TYPE mty_delimiter,
-      mv_endofline TYPE string. " length can be 1 or 2 characters.
+      mv_separator   TYPE mty_separator,
+      mv_delimiter   TYPE mty_delimiter,
+      mv_endofline   TYPE string, " length can be 1 or 2 characters.
+      mv_conv_exit   TYPE abap_bool,
+      mv_ts_parse    TYPE timestampl,
+      mv_ts_convex   TYPE timestampl,
+      mt_comp_convex TYPE mty_t_comp_convex.
     METHODS:
       create_string_struc IMPORTING it_data             TYPE ANY TABLE
                           RETURNING VALUE(rs_str_struc) TYPE mty_s_string_struc
                           RAISING   cx_sy_struct_creation,
+      call_conv_exits CHANGING cs TYPE any,
       generate_cell IMPORTING iv_fieldname   TYPE string
                               iv_fieldtype   TYPE REF TO cl_abap_datadescr
                               iv_data        TYPE any
@@ -55,7 +67,8 @@ CLASS zcl_wd_csv IMPLEMENTATION.
 
   METHOD constructor.
 * ---------------------------------------------------------------------
-    " endofline can either be a linefeed (one char) or carriage return and linefeed (two chars)
+    " endofline can either be a linefeed/carriage return (one char)
+    " or carriage return and linefeed (two chars)
     CASE iv_endofline.
       WHEN mc_endofline_lf OR mc_endofline_cr_lf OR mc_endofline_cr.
         mv_endofline = iv_endofline.
@@ -84,6 +97,14 @@ CLASS zcl_wd_csv IMPLEMENTATION.
         EXPORTING
           delimiter = iv_delimiter.
     ENDIF.
+
+* ---------------------------------------------------------------------
+    CASE iv_conv_exit.
+      WHEN abap_false.
+        mv_conv_exit = abap_false.
+      WHEN OTHERS.
+        mv_conv_exit = abap_true.
+    ENDCASE.
 
 * ---------------------------------------------------------------------
   ENDMETHOD.
@@ -123,10 +144,17 @@ CLASS zcl_wd_csv IMPLEMENTATION.
   METHOD generate_cell.
 * ---------------------------------------------------------------------
     DATA:
+      lv_cell    TYPE c LENGTH 200, " randomly selected, should be enough right?
       lv_delimit TYPE abap_bool.
 
 * ---------------------------------------------------------------------
-    rv_cell = iv_data.
+    CASE mv_conv_exit.
+      WHEN abap_true.
+        WRITE iv_data TO lv_cell LEFT-JUSTIFIED.
+        rv_cell = lv_cell.
+      WHEN abap_false.
+        rv_cell = iv_data.
+    ENDCASE.
 
 * ---------------------------------------------------------------------
     " escape quotes
@@ -151,6 +179,60 @@ CLASS zcl_wd_csv IMPLEMENTATION.
     IF lv_delimit = abap_true.
       rv_cell = mv_delimiter && rv_cell && mv_delimiter.
     ENDIF.
+
+* ---------------------------------------------------------------------
+  ENDMETHOD.
+
+
+  METHOD call_conv_exits.
+* ---------------------------------------------------------------------
+    DATA:
+      lo_structdescr TYPE REF TO cl_abap_structdescr,
+      lt_components  TYPE abap_component_view_tab,
+      lv_conv_exit   TYPE funcname,
+      lr             TYPE REF TO data.
+    FIELD-SYMBOLS:
+      <lv_temp> TYPE any,
+      <lv>      TYPE any.
+
+* ---------------------------------------------------------------------
+    IF mv_ts_convex <> mv_ts_parse.
+      mv_ts_convex = mv_ts_parse.
+      FREE mt_comp_convex.
+      lo_structdescr ?= cl_abap_structdescr=>describe_by_data( cs ).
+      lt_components = lo_structdescr->get_included_view( ).
+      LOOP AT lt_components ASSIGNING FIELD-SYMBOL(<ls_component>).
+*
+        CAST cl_abap_elemdescr( <ls_component>-type )->get_ddic_field( RECEIVING  p_flddescr = DATA(ls_dfies)
+                                                                       EXCEPTIONS OTHERS     = 1              ).
+        IF sy-subrc <> 0
+        OR ls_dfies-convexit IS INITIAL.
+          CONTINUE.
+        ENDIF.
+
+        CREATE DATA lr TYPE HANDLE <ls_component>-type.
+        INSERT VALUE #( name     = <ls_component>-name
+                        convexit = ls_dfies-convexit
+                        temp_fld = lr                  ) INTO TABLE mt_comp_convex.
+      ENDLOOP.
+    ENDIF.
+
+* ---------------------------------------------------------------------
+    LOOP AT mt_comp_convex ASSIGNING FIELD-SYMBOL(<ls>).
+      ASSIGN <ls>-temp_fld->* TO <lv_temp>.
+      ASSIGN COMPONENT <ls>-name OF STRUCTURE cs TO <lv>.
+      lv_conv_exit = 'CONVERSION_EXIT_' && <ls>-convexit && '_INPUT'.
+      CALL FUNCTION lv_conv_exit
+        EXPORTING
+          input  = <lv>
+        IMPORTING
+          output = <lv_temp>
+        EXCEPTIONS
+          OTHERS = 1.
+      IF sy-subrc = 0.
+        <lv> = <lv_temp>.
+      ENDIF.
+    ENDLOOP.
 
 * ---------------------------------------------------------------------
   ENDMETHOD.
@@ -265,9 +347,16 @@ CLASS zcl_wd_csv IMPLEMENTATION.
     DEFINE move_data.
 **********************************************************************
       MOVE-CORRESPONDING <ls_data_str> TO <ls_data_exp>.
+      IF mv_conv_exit = abap_true.
+        call_conv_exits( CHANGING cs = <ls_data_exp> ).
+      ENDIF.
       FREE <ls_data_str>.
 **********************************************************************
     END-OF-DEFINITION.
+
+* ---------------------------------------------------------------------
+    " for conv exit buffering
+    GET TIME STAMP FIELD mv_ts_parse.
 
 * ---------------------------------------------------------------------
     ls_str_struc = create_string_struc( et_data ).
@@ -387,6 +476,5 @@ CLASS zcl_wd_csv IMPLEMENTATION.
 
 * ---------------------------------------------------------------------
   ENDMETHOD.
-
 
 ENDCLASS.

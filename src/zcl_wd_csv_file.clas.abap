@@ -7,6 +7,7 @@ CLASS zcl_wd_csv_file DEFINITION PUBLIC INHERITING FROM zcl_wd_csv CREATE PUBLIC
                             iv_endofline   TYPE csequence     DEFAULT mc_endofline_cr_lf
                             iv_separator   TYPE mty_separator DEFAULT mc_default_separator
                             iv_delimiter   TYPE mty_delimiter DEFAULT mc_default_delimiter
+                            iv_conv_exit   TYPE abap_bool     DEFAULT abap_false
                   RAISING   zcx_wd_csv_invalid_endofline
                             zcx_wd_csv_invalid_separator
                             zcx_wd_csv_invalid_delimiter,
@@ -122,7 +123,8 @@ CLASS zcl_wd_csv_file IMPLEMENTATION.
 * ---------------------------------------------------------------------
     super->constructor( iv_endofline = iv_endofline
                         iv_separator = iv_separator
-                        iv_delimiter = iv_delimiter ).
+                        iv_delimiter = iv_delimiter
+                        iv_conv_exit = iv_conv_exit ).
 
 * ---------------------------------------------------------------------
     mv_encoding    = iv_encoding.
