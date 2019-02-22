@@ -44,6 +44,12 @@
      <LENGTH>26</LENGTH>
     </item>
     <item>
+     <ID>I</ID>
+     <KEY>006</KEY>
+     <ENTRY>Header</ENTRY>
+     <LENGTH>17</LENGTH>
+    </item>
+    <item>
      <ID>R</ID>
      <ENTRY>CSV Parsing Sample Report</ENTRY>
      <LENGTH>25</LENGTH>
@@ -77,6 +83,12 @@
      <KEY>DEL_SQ</KEY>
      <ENTRY>Single Quote &apos;</ENTRY>
      <LENGTH>22</LENGTH>
+    </item>
+    <item>
+     <ID>S</ID>
+     <KEY>HEADER</KEY>
+     <ENTRY>CSV File has Header Line</ENTRY>
+     <LENGTH>32</LENGTH>
     </item>
     <item>
      <ID>S</ID>

@@ -49,11 +49,15 @@ PARAMETERS cols TYPE i.
 SELECTION-SCREEN END OF BLOCK bl3.
 
 SELECTION-SCREEN BEGIN OF BLOCK bl4 WITH FRAME TITLE bl4_tit.
+PARAMETERS header TYPE xfeld DEFAULT abap_true.
+SELECTION-SCREEN END OF BLOCK bl4.
+
+SELECTION-SCREEN BEGIN OF BLOCK bl5 WITH FRAME TITLE bl5_tit.
 PARAMETERS:
   crlf TYPE flag RADIOBUTTON GROUP rg2 DEFAULT 'X',
   lf   TYPE flag RADIOBUTTON GROUP rg2,
   cr   TYPE flag RADIOBUTTON GROUP rg2.
-SELECTION-SCREEN END OF BLOCK bl4.
+SELECTION-SCREEN END OF BLOCK bl5.
 
 *=======================================================================
 INITIALIZATION.
@@ -61,7 +65,8 @@ INITIALIZATION.
   bl1_tit = 'Column Delimiter'(005).
   bl2_tit = 'Column Separator'(004).
   bl3_tit = 'Columns'(003).
-  bl4_tit = 'End of Line'(001).
+  bl4_tit = 'Header'(006).
+  bl5_tit = 'End of Line'(001).
   go = NEW #( ).
 
 *=======================================================================
@@ -138,15 +143,11 @@ CLASS lcl IMPLEMENTATION.
       lv_action TYPE i.
 
 * ---------------------------------------------------------------------
-    cl_gui_frontend_services=>file_open_dialog( EXPORTING  multiselection          = abap_false
-                                                CHANGING   file_table              = lt_files
-                                                           rc                      = lv_rc
-                                                           user_action             = lv_action
-                                                EXCEPTIONS file_open_dialog_failed = 1
-                                                           cntl_error              = 2
-                                                           error_no_gui            = 3
-                                                           not_supported_by_gui    = 4
-                                                           OTHERS                  = 5           ).
+    cl_gui_frontend_services=>file_open_dialog( EXPORTING  multiselection = abap_false
+                                                CHANGING   file_table     = lt_files
+                                                           rc             = lv_rc
+                                                           user_action    = lv_action
+                                                EXCEPTIONS OTHERS         = 1           ).
     IF sy-subrc <> 0.
       MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
     ENDIF.
@@ -194,7 +195,7 @@ CLASS lcl IMPLEMENTATION.
         lo_csv_file = NEW #( iv_endofline = mv_endofline
                              iv_separator = mv_separator
                              iv_delimiter = mv_delimiter ).
-        lo_csv_file->parse_file_local( EXPORTING iv_has_header = abap_true
+        lo_csv_file->parse_file_local( EXPORTING iv_has_header = header
                                                  iv_path       = path
                                        IMPORTING et_data       = <lt_data> ).
       CATCH cx_root INTO lx.
