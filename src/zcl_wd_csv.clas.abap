@@ -63,6 +63,8 @@ CLASS zcl_wd_csv DEFINITION PUBLIC CREATE PUBLIC.
       create_string_struc IMPORTING it_data             TYPE ANY TABLE
                           RETURNING VALUE(rs_str_struc) TYPE mty_s_string_struc
                           RAISING   cx_sy_struct_creation,
+      move_data CHANGING cs_str TYPE any
+                         cs_exp TYPE any,
       call_conv_exits CHANGING cs TYPE any,
       generate_cell IMPORTING iv_fieldname   TYPE string
                               iv_fieldtype   TYPE REF TO cl_abap_datadescr
@@ -162,6 +164,18 @@ CLASS zcl_wd_csv IMPLEMENTATION.
     IF lv_delimit = abap_true.
       rv_cell = mv_delimiter && rv_cell && mv_delimiter.
     ENDIF.
+
+* ---------------------------------------------------------------------
+  ENDMETHOD.
+
+
+  METHOD move_data.
+* ---------------------------------------------------------------------
+    MOVE-CORRESPONDING cs_str TO cs_exp.
+    IF mv_conv_exit = abap_true.
+      call_conv_exits( CHANGING cs = cs_exp ).
+    ENDIF.
+    FREE cs_str.
 
 * ---------------------------------------------------------------------
   ENDMETHOD.
@@ -327,16 +341,6 @@ CLASS zcl_wd_csv IMPLEMENTATION.
 **********************************************************************
     END-OF-DEFINITION.
 
-    DEFINE move_data.
-**********************************************************************
-      MOVE-CORRESPONDING <ls_data_str> TO <ls_data_exp>.
-      IF mv_conv_exit = abap_true.
-        call_conv_exits( CHANGING cs = <ls_data_exp> ).
-      ENDIF.
-      FREE <ls_data_str>.
-**********************************************************************
-    END-OF-DEFINITION.
-
 * ---------------------------------------------------------------------
     " for conv exit buffering
     GET TIME STAMP FIELD mv_ts_parse.
@@ -427,9 +431,13 @@ CLASS zcl_wd_csv IMPLEMENTATION.
                 EXPORTING
                   line = lv_curr_line.
             ENDIF.
-            move_data. EXIT.
+            move_data( CHANGING cs_str = <ls_data_str>
+                                cs_exp = <ls_data_exp> ).
+            EXIT.
           ENDIF.
-          move_data. append_line.
+          move_data( CHANGING cs_str = <ls_data_str>
+                              cs_exp = <ls_data_exp> ).
+          append_line.
           IF mv_endofline = mc_endofline_cr_lf.
             lv_str_pos = lv_str_pos + 1.
           ENDIF.
@@ -451,7 +459,8 @@ CLASS zcl_wd_csv IMPLEMENTATION.
             EXPORTING
               line = lv_curr_line.
         ENDIF.
-        move_data.
+        move_data( CHANGING cs_str = <ls_data_str>
+                            cs_exp = <ls_data_exp> ).
         EXIT.
       ENDIF.
       lv_str_pos = lv_str_pos + 1.
@@ -551,5 +560,6 @@ CLASS zcl_wd_csv IMPLEMENTATION.
 
 * ---------------------------------------------------------------------
   ENDMETHOD.
+
 
 ENDCLASS.
