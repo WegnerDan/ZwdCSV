@@ -184,7 +184,8 @@ CLASS lcl IMPLEMENTATION.
     " fake select to check table name
     TRY.
         SELECT COUNT(*) UP TO 1 ROWS FROM (table).
-      CATCH cx_sy_dynamic_osql_semantics INTO lx.
+      CATCH cx_sy_dynamic_osql_syntax
+            cx_sy_dynamic_osql_semantics INTO lx.
         MESSAGE lx TYPE 'S' DISPLAY LIKE 'E'.
         RETURN.
     ENDTRY.
@@ -207,7 +208,8 @@ CLASS lcl IMPLEMENTATION.
         FROM (table)
         INTO TABLE @<lt_data>
         ORDER BY PRIMARY KEY.
-      CATCH cx_sy_dynamic_osql_semantics INTO lx.
+      CATCH cx_sy_dynamic_osql_syntax
+            cx_sy_dynamic_osql_semantics INTO lx.
         MESSAGE lx TYPE 'S' DISPLAY LIKE 'E'.
         RETURN.
     ENDTRY.
