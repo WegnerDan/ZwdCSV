@@ -439,6 +439,7 @@ CLASS zcl_wd_csv IMPLEMENTATION.
                               cs_exp = <ls_data_exp> ).
           append_line.
           IF mv_endofline = mc_endofline_cr_lf.
+            " advance position because crlf is two characters
             lv_str_pos = lv_str_pos + 1.
           ENDIF.
         WHEN ` `.
