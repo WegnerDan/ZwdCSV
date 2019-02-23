@@ -147,6 +147,7 @@ CLASS zcl_wd_csv IMPLEMENTATION.
       lv_delimit = abap_true.
       rv_cell = replace( val  = rv_cell
                          sub  = mv_delimiter
+                         occ  = 0
                          with = mv_delimiter && mv_delimiter ).
     ENDIF.
 
@@ -424,7 +425,12 @@ CLASS zcl_wd_csv IMPLEMENTATION.
               EXPORTING
                 line = lv_curr_line.
           ENDIF.
-          lv_str_pos_p1 = lv_str_pos + 1.
+          CASE mv_endofline.
+            WHEN mc_endofline_cr OR mc_endofline_lf.
+              lv_str_pos_p1 = lv_str_pos + 1.
+            WHEN mc_endofline_cr_lf.
+              lv_str_pos_p1 = lv_str_pos + 2.
+          ENDCASE.
           IF iv_csv_string+lv_str_pos_p1 CO space.
             IF lv_component < ls_str_struc-columns.
               RAISE EXCEPTION TYPE zcx_wd_csv_too_few_columns
