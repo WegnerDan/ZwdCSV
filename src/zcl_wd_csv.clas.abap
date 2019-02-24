@@ -10,10 +10,11 @@ CLASS zcl_wd_csv DEFINITION PUBLIC CREATE PUBLIC.
       mc_endofline_cr_lf   TYPE c LENGTH 2    VALUE cl_abap_char_utilities=>cr_lf,
       mc_endofline_cr      TYPE c LENGTH 1    VALUE cl_abap_char_utilities=>cr_lf.
     METHODS:
-      constructor IMPORTING iv_endofline TYPE csequence     DEFAULT mc_endofline_cr_lf
-                            iv_separator TYPE mty_separator DEFAULT mc_default_separator
-                            iv_delimiter TYPE mty_delimiter DEFAULT mc_default_delimiter
-                            iv_conv_exit TYPE abap_bool     DEFAULT abap_false
+      constructor IMPORTING iv_endofline   TYPE csequence     DEFAULT mc_endofline_cr_lf
+                            iv_separator   TYPE mty_separator DEFAULT mc_default_separator
+                            iv_delimiter   TYPE mty_delimiter DEFAULT mc_default_delimiter
+                            iv_conv_exit   TYPE abap_bool     DEFAULT abap_false
+                            iv_trim_spaces TYPE abap_bool     DEFAULT abap_false
                   RAISING   zcx_wd_csv_invalid_endofline
                             zcx_wd_csv_invalid_separator
                             zcx_wd_csv_invalid_delimiter,
@@ -38,7 +39,9 @@ CLASS zcl_wd_csv DEFINITION PUBLIC CREATE PUBLIC.
       set_delimiter IMPORTING iv_delimiter TYPE mty_delimiter DEFAULT mc_default_delimiter
                     RAISING   zcx_wd_csv_invalid_delimiter,
       get_conv_exit RETURNING VALUE(rv_conv_exit) TYPE abap_bool,
-      set_conv_exit IMPORTING iv_conv_exit TYPE abap_bool DEFAULT abap_true.
+      set_conv_exit IMPORTING iv_conv_exit TYPE abap_bool DEFAULT abap_true,
+      get_trim_spaces RETURNING VALUE(iv_trim_spaces) TYPE abap_bool,
+      set_trim_spaces IMPORTING iv_trim_spaces TYPE abap_bool DEFAULT abap_true.
   PROTECTED SECTION.
     TYPES:
       BEGIN OF mty_s_string_struc,
@@ -56,6 +59,7 @@ CLASS zcl_wd_csv DEFINITION PUBLIC CREATE PUBLIC.
       mv_separator   TYPE mty_separator,
       mv_delimiter   TYPE mty_delimiter,
       mv_conv_exit   TYPE abap_bool,
+      mv_trim_spaces TYPE abap_bool,
       mv_ts_parse    TYPE timestampl,
       mv_ts_convex   TYPE timestampl,
       mt_comp_convex TYPE mty_t_comp_convex.
@@ -66,6 +70,7 @@ CLASS zcl_wd_csv DEFINITION PUBLIC CREATE PUBLIC.
       move_data CHANGING cs_str TYPE any
                          cs_exp TYPE any,
       call_conv_exits CHANGING cs TYPE any,
+      trim_spaces CHANGING cs TYPE any,
       generate_cell IMPORTING iv_fieldname   TYPE string
                               iv_fieldtype   TYPE REF TO cl_abap_datadescr
                               iv_data        TYPE any
@@ -90,6 +95,9 @@ CLASS zcl_wd_csv IMPLEMENTATION.
 
 * ---------------------------------------------------------------------
     set_conv_exit( iv_conv_exit ).
+
+* ---------------------------------------------------------------------
+    set_trim_spaces( iv_trim_spaces ).
 
 * ---------------------------------------------------------------------
   ENDMETHOD.
@@ -142,6 +150,11 @@ CLASS zcl_wd_csv IMPLEMENTATION.
     ENDCASE.
 
 * ---------------------------------------------------------------------
+    IF mv_trim_spaces = abap_true.
+      CONDENSE rv_cell.
+    ENDIF.
+
+* ---------------------------------------------------------------------
     " escape quotes
     IF find( val = rv_cell sub = mv_delimiter ) >= 0.
       lv_delimit = abap_true.
@@ -175,6 +188,9 @@ CLASS zcl_wd_csv IMPLEMENTATION.
     MOVE-CORRESPONDING cs_str TO cs_exp.
     IF mv_conv_exit = abap_true.
       call_conv_exits( CHANGING cs = cs_exp ).
+    ENDIF.
+    IF mv_trim_spaces = abap_true.
+      trim_spaces( CHANGING cs = cs_exp ).
     ENDIF.
     FREE cs_str.
 
@@ -231,6 +247,18 @@ CLASS zcl_wd_csv IMPLEMENTATION.
         <lv> = <lv_temp>.
       ENDIF.
     ENDLOOP.
+
+* ---------------------------------------------------------------------
+  ENDMETHOD.
+
+
+  METHOD trim_spaces.
+* ---------------------------------------------------------------------
+    DO.
+      ASSIGN COMPONENT sy-index OF STRUCTURE cs TO FIELD-SYMBOL(<lv>).
+      IF sy-subrc <> 0. EXIT. ENDIF.
+      CONDENSE <lv>.
+    ENDDO.
 
 * ---------------------------------------------------------------------
   ENDMETHOD.
@@ -453,8 +481,12 @@ CLASS zcl_wd_csv IMPLEMENTATION.
           OR lv_in_cell   = abap_true.
             append_character. continue_loop.
           ELSE.
-            " ignore space if not currently in cell or delimited
-            continue_loop.
+            IF mv_trim_spaces = abap_true.
+              " ignore space if not currently in cell or delimited
+              continue_loop.
+            ELSE.
+              append_character.
+            ENDIF.
           ENDIF.
         WHEN OTHERS.
           lv_in_cell = abap_true.
@@ -568,5 +600,25 @@ CLASS zcl_wd_csv IMPLEMENTATION.
 * ---------------------------------------------------------------------
   ENDMETHOD.
 
+
+  METHOD get_trim_spaces.
+* ---------------------------------------------------------------------
+    iv_trim_spaces = mv_trim_spaces.
+
+* ---------------------------------------------------------------------
+  ENDMETHOD.
+
+
+  METHOD set_trim_spaces.
+* ---------------------------------------------------------------------
+    CASE iv_trim_spaces.
+      WHEN abap_false.
+        mv_trim_spaces = abap_false.
+      WHEN OTHERS.
+        mv_trim_spaces = abap_true.
+    ENDCASE.
+
+* ---------------------------------------------------------------------
+  ENDMETHOD.
 
 ENDCLASS.
