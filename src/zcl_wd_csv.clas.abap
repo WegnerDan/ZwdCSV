@@ -67,13 +67,18 @@ CLASS zcl_wd_csv DEFINITION PUBLIC CREATE PUBLIC.
       create_string_struc IMPORTING it_data             TYPE ANY TABLE
                           RETURNING VALUE(rs_str_struc) TYPE mty_s_string_struc
                           RAISING   cx_sy_struct_creation,
-      move_data CHANGING cs_str TYPE any
-                         cs_exp TYPE any,
-      call_conv_exits CHANGING cs TYPE any,
+      move_data IMPORTING iv_conv_exit   TYPE abap_bool
+                          iv_trim_spaces TYPE abap_bool
+                CHANGING  cs_str         TYPE any
+                          cs_exp         TYPE any,
+      call_conv_exits IMPORTING is TYPE any
+                      CHANGING  cs TYPE any,
       trim_spaces CHANGING cs TYPE any,
       generate_cell IMPORTING iv_fieldname   TYPE string
                               iv_fieldtype   TYPE REF TO cl_abap_datadescr
                               iv_data        TYPE any
+                              iv_conv_exit   TYPE abap_bool
+                              iv_trim_spaces TYPE abap_bool
                     RETURNING VALUE(rv_cell) TYPE string.
   PRIVATE SECTION.
 ENDCLASS.
@@ -141,7 +146,7 @@ CLASS zcl_wd_csv IMPLEMENTATION.
       lv_delimit TYPE abap_bool.
 
 * ---------------------------------------------------------------------
-    CASE mv_conv_exit.
+    CASE iv_conv_exit.
       WHEN abap_true.
         WRITE iv_data TO lv_cell LEFT-JUSTIFIED.
         rv_cell = lv_cell.
@@ -150,7 +155,7 @@ CLASS zcl_wd_csv IMPLEMENTATION.
     ENDCASE.
 
 * ---------------------------------------------------------------------
-    IF mv_trim_spaces = abap_true.
+    IF iv_trim_spaces = abap_true.
       CONDENSE rv_cell.
     ENDIF.
 
@@ -186,11 +191,12 @@ CLASS zcl_wd_csv IMPLEMENTATION.
   METHOD move_data.
 * ---------------------------------------------------------------------
     MOVE-CORRESPONDING cs_str TO cs_exp.
-    IF mv_conv_exit = abap_true.
-      call_conv_exits( CHANGING cs = cs_exp ).
-    ENDIF.
-    IF mv_trim_spaces = abap_true.
+    IF iv_trim_spaces = abap_true.
       trim_spaces( CHANGING cs = cs_exp ).
+    ENDIF.
+    IF iv_conv_exit = abap_true.
+      call_conv_exits( EXPORTING is = cs_str
+                       CHANGING  cs = cs_exp ).
     ENDIF.
     FREE cs_str.
 
@@ -207,7 +213,8 @@ CLASS zcl_wd_csv IMPLEMENTATION.
       lr             TYPE REF TO data.
     FIELD-SYMBOLS:
       <lv_temp> TYPE any,
-      <lv>      TYPE any.
+      <lv_str>  TYPE any,
+      <lv_exp>  TYPE any.
 
 * ---------------------------------------------------------------------
     IF mv_ts_convex <> mv_ts_parse.
@@ -234,17 +241,19 @@ CLASS zcl_wd_csv IMPLEMENTATION.
 * ---------------------------------------------------------------------
     LOOP AT mt_comp_convex ASSIGNING FIELD-SYMBOL(<ls>).
       ASSIGN <ls>-temp_fld->* TO <lv_temp>.
-      ASSIGN COMPONENT <ls>-name OF STRUCTURE cs TO <lv>.
+      FREE <lv_temp>.
+      ASSIGN COMPONENT <ls>-name OF STRUCTURE is TO <lv_str>.
+      ASSIGN COMPONENT <ls>-name OF STRUCTURE cs TO <lv_exp>.
       lv_conv_exit = 'CONVERSION_EXIT_' && <ls>-convexit && '_INPUT'.
       CALL FUNCTION lv_conv_exit
         EXPORTING
-          input  = <lv>
+          input  = <lv_str>
         IMPORTING
           output = <lv_temp>
         EXCEPTIONS
           OTHERS = 1.
       IF sy-subrc = 0.
-        <lv> = <lv_temp>.
+        <lv_exp> = <lv_temp>.
       ENDIF.
     ENDLOOP.
 
@@ -288,13 +297,17 @@ CLASS zcl_wd_csv IMPLEMENTATION.
     IF iv_with_header = abap_true.
       LOOP AT lt_components ASSIGNING <ls_component>.
         IF ev_csv_string IS INITIAL.
-          ev_csv_string = generate_cell( iv_fieldname = <ls_component>-name
-                                         iv_fieldtype = <ls_component>-type
-                                         iv_data      = <ls_component>-name ).
+          ev_csv_string = generate_cell( iv_fieldname   = <ls_component>-name
+                                         iv_fieldtype   = <ls_component>-type
+                                         iv_data        = <ls_component>-name
+                                         iv_conv_exit   = mv_conv_exit
+                                         iv_trim_spaces = mv_trim_spaces       ).
         ELSE.
-          ev_csv_string = ev_csv_string && mv_separator && generate_cell( iv_fieldname = <ls_component>-name
-                                                                          iv_fieldtype = <ls_component>-type
-                                                                          iv_data      = <ls_component>-name ).
+          ev_csv_string = ev_csv_string && mv_separator && generate_cell( iv_fieldname   = <ls_component>-name
+                                                                          iv_fieldtype   = <ls_component>-type
+                                                                          iv_data        = <ls_component>-name
+                                                                          iv_conv_exit   = mv_conv_exit
+                                                                          iv_trim_spaces = mv_trim_spaces       ).
         ENDIF.
       ENDLOOP.
       ev_csv_string = ev_csv_string && mv_endofline.
@@ -310,13 +323,17 @@ CLASS zcl_wd_csv IMPLEMENTATION.
         CASE lv_start_newline.
           WHEN abap_true.
             lv_start_newline = abap_false.
-            ev_csv_string = ev_csv_string && generate_cell( iv_fieldname = <ls_component>-name
-                                                            iv_fieldtype = <ls_component>-type
-                                                            iv_data      = <lv_data>           ).
+            ev_csv_string = ev_csv_string && generate_cell( iv_fieldname   = <ls_component>-name
+                                                            iv_fieldtype   = <ls_component>-type
+                                                            iv_data        = <lv_data>
+                                                            iv_conv_exit   = mv_conv_exit
+                                                            iv_trim_spaces = mv_trim_spaces       ).
           WHEN abap_false.
-            ev_csv_string = ev_csv_string && mv_separator && generate_cell( iv_fieldname = <ls_component>-name
-                                                                            iv_fieldtype = <ls_component>-type
-                                                                            iv_data      = <lv_data>           ).
+            ev_csv_string = ev_csv_string && mv_separator && generate_cell( iv_fieldname   = <ls_component>-name
+                                                                            iv_fieldtype   = <ls_component>-type
+                                                                            iv_data        = <lv_data>
+                                                                            iv_conv_exit   = mv_conv_exit
+                                                                            iv_trim_spaces = mv_trim_spaces       ).
         ENDCASE.
       ENDLOOP.
       ev_csv_string = ev_csv_string && mv_endofline.
@@ -465,12 +482,16 @@ CLASS zcl_wd_csv IMPLEMENTATION.
                 EXPORTING
                   line = lv_curr_line.
             ENDIF.
-            move_data( CHANGING cs_str = <ls_data_str>
-                                cs_exp = <ls_data_exp> ).
+            move_data( EXPORTING iv_conv_exit   = mv_conv_exit
+                                 iv_trim_spaces = mv_trim_spaces
+                       CHANGING  cs_str = <ls_data_str>
+                                 cs_exp = <ls_data_exp>          ).
             EXIT.
           ENDIF.
-          move_data( CHANGING cs_str = <ls_data_str>
-                              cs_exp = <ls_data_exp> ).
+          move_data( EXPORTING iv_conv_exit   = mv_conv_exit
+                               iv_trim_spaces = mv_trim_spaces
+                     CHANGING  cs_str = <ls_data_str>
+                               cs_exp = <ls_data_exp>          ).
           append_line.
           IF mv_endofline = mc_endofline_cr_lf.
             " advance position because crlf is two characters
@@ -498,8 +519,10 @@ CLASS zcl_wd_csv IMPLEMENTATION.
             EXPORTING
               line = lv_curr_line.
         ENDIF.
-        move_data( CHANGING cs_str = <ls_data_str>
-                            cs_exp = <ls_data_exp> ).
+        move_data( EXPORTING iv_conv_exit   = mv_conv_exit
+                             iv_trim_spaces = mv_trim_spaces
+                   CHANGING  cs_str = <ls_data_str>
+                             cs_exp = <ls_data_exp>          ).
         EXIT.
       ENDIF.
       lv_str_pos = lv_str_pos + 1.
