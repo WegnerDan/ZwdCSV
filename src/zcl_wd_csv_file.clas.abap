@@ -24,9 +24,9 @@ CLASS zcl_wd_csv_file DEFINITION PUBLIC INHERITING FROM zcl_wd_csv CREATE PUBLIC
                                 cx_sy_file_close
                                 cx_parameter_invalid_range
                                 cx_parameter_invalid_type
-                                zcx_wd_csv_too_many_columns
-                                zcx_wd_csv_too_few_columns
-                                zcx_wd_csv_mixed_endofline,
+                                RESUMABLE(zcx_wd_csv_too_many_columns)
+                                RESUMABLE(zcx_wd_csv_too_few_columns)
+                                RESUMABLE(zcx_wd_csv_mixed_endofline),
       parse_file_local IMPORTING iv_has_header TYPE abap_bool DEFAULT abap_false
                                  iv_path       TYPE string
                        EXPORTING et_data       TYPE STANDARD TABLE
@@ -36,9 +36,9 @@ CLASS zcl_wd_csv_file DEFINITION PUBLIC INHERITING FROM zcl_wd_csv CREATE PUBLIC
                                  cx_sy_codepage_converter_init
                                  cx_parameter_invalid_type
                                  cx_sy_struct_creation
-                                 zcx_wd_csv_too_many_columns
-                                 zcx_wd_csv_too_few_columns
-                                 zcx_wd_csv_mixed_endofline,
+                                 RESUMABLE(zcx_wd_csv_too_many_columns)
+                                 RESUMABLE(zcx_wd_csv_too_few_columns)
+                                 RESUMABLE(zcx_wd_csv_mixed_endofline),
       generate_file_appl IMPORTING iv_with_header TYPE abap_bool DEFAULT abap_false
                                    it_data        TYPE STANDARD TABLE
                                    iv_path        TYPE string

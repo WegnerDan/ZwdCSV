@@ -167,7 +167,8 @@ CLASS lcl IMPLEMENTATION.
       lo_csv_file   TYPE REF TO zcl_wd_csv_file,
       lt_components TYPE cl_abap_structdescr=>component_table,
       lr_data       TYPE REF TO data,
-      lx            TYPE REF TO cx_root.
+      lx            TYPE REF TO cx_root,
+      lv_answer     TYPE c LENGTH 1.
     FIELD-SYMBOLS:
       <lt_data> TYPE STANDARD TABLE.
 
@@ -198,6 +199,21 @@ CLASS lcl IMPLEMENTATION.
         lo_csv_file->parse_file_local( EXPORTING iv_has_header = header
                                                  iv_path       = path
                                        IMPORTING et_data       = <lt_data> ).
+      CATCH BEFORE UNWIND zcx_wd_csv_too_many_columns
+                          zcx_wd_csv_too_few_columns
+                          zcx_wd_csv_mixed_endofline INTO lx.
+        CALL FUNCTION 'POPUP_TO_CONFIRM'
+          EXPORTING
+            text_question         = lx->get_text( ) && ` ` && 'Continue?'(007)
+            display_cancel_button = abap_false
+            popup_type            = 'ICON_MESSAGE_ERROR'
+          IMPORTING
+            answer                = lv_answer.
+        IF lv_answer = 1.
+          RESUME.
+        ELSE.
+          RETURN.
+        ENDIF.
       CATCH cx_root INTO lx.
         MESSAGE lx TYPE 'S' DISPLAY LIKE 'E'.
         RETURN.

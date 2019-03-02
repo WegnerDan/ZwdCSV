@@ -23,9 +23,9 @@ CLASS zcl_wd_csv DEFINITION PUBLIC CREATE PUBLIC.
                    EXPORTING et_data       TYPE STANDARD TABLE
                    RAISING   cx_sy_struct_creation
                              cx_sy_conversion_error
-                             zcx_wd_csv_too_many_columns
-                             zcx_wd_csv_too_few_columns
-                             zcx_wd_csv_mixed_endofline,
+                             RESUMABLE(zcx_wd_csv_too_many_columns)
+                             RESUMABLE(zcx_wd_csv_too_few_columns)
+                             RESUMABLE(zcx_wd_csv_mixed_endofline),
       generate_string IMPORTING iv_with_header TYPE abap_bool DEFAULT abap_false
                                 it_data        TYPE STANDARD TABLE
                       EXPORTING ev_csv_string  TYPE string,
@@ -208,7 +208,6 @@ CLASS zcl_wd_csv IMPLEMENTATION.
 * ---------------------------------------------------------------------
     DATA:
       lo_structdescr TYPE REF TO cl_abap_structdescr,
-      lt_components  TYPE abap_component_view_tab,
       lv_conv_exit   TYPE funcname,
       lr             TYPE REF TO data.
     FIELD-SYMBOLS:
@@ -221,8 +220,7 @@ CLASS zcl_wd_csv IMPLEMENTATION.
       mv_ts_convex = mv_ts_parse.
       FREE mt_comp_convex.
       lo_structdescr ?= cl_abap_structdescr=>describe_by_data( cs ).
-      lt_components = lo_structdescr->get_included_view( ).
-      LOOP AT lt_components ASSIGNING FIELD-SYMBOL(<ls_component>).
+      LOOP AT lo_structdescr->get_included_view( ) ASSIGNING FIELD-SYMBOL(<ls_component>).
 *
         CAST cl_abap_elemdescr( <ls_component>-type )->get_ddic_field( RECEIVING  p_flddescr = DATA(ls_dfies)
                                                                        EXCEPTIONS OTHERS     = 1              ).
@@ -431,7 +429,7 @@ CLASS zcl_wd_csv IMPLEMENTATION.
             IF lv_first_line = abap_true.
               lv_curr_line = 1.
             ENDIF.
-            RAISE EXCEPTION TYPE zcx_wd_csv_too_many_columns
+            RAISE RESUMABLE EXCEPTION TYPE zcx_wd_csv_too_many_columns
               EXPORTING
                 line = lv_curr_line.
           ENDIF.
@@ -444,7 +442,7 @@ CLASS zcl_wd_csv IMPLEMENTATION.
             lv_first_line = abap_false.
             FREE <ls_data_str>.
             IF lv_component < ls_str_struc-columns.
-              RAISE EXCEPTION TYPE zcx_wd_csv_too_few_columns
+              RAISE RESUMABLE EXCEPTION TYPE zcx_wd_csv_too_few_columns
                 EXPORTING
                   line = 1.
             ENDIF.
@@ -461,12 +459,12 @@ CLASS zcl_wd_csv IMPLEMENTATION.
                AND iv_csv_string+lv_str_pos(1) <> mc_endofline_lf    )
           OR (     mv_endofline = mc_endofline_cr
                AND iv_csv_string+lv_str_pos(1) <> mc_endofline_cr    ).
-            RAISE EXCEPTION TYPE zcx_wd_csv_mixed_endofline
+            RAISE RESUMABLE EXCEPTION TYPE zcx_wd_csv_mixed_endofline
               EXPORTING
                 line = lv_curr_line.
           ENDIF.
           IF lv_component < ls_str_struc-columns.
-            RAISE EXCEPTION TYPE zcx_wd_csv_too_few_columns
+            RAISE RESUMABLE EXCEPTION TYPE zcx_wd_csv_too_few_columns
               EXPORTING
                 line = lv_curr_line.
           ENDIF.
@@ -478,7 +476,7 @@ CLASS zcl_wd_csv IMPLEMENTATION.
           ENDCASE.
           IF iv_csv_string+lv_str_pos_p1 CO space.
             IF lv_component < ls_str_struc-columns.
-              RAISE EXCEPTION TYPE zcx_wd_csv_too_few_columns
+              RAISE RESUMABLE EXCEPTION TYPE zcx_wd_csv_too_few_columns
                 EXPORTING
                   line = lv_curr_line.
             ENDIF.
@@ -515,7 +513,7 @@ CLASS zcl_wd_csv IMPLEMENTATION.
       ENDCASE.
       IF ( lv_str_pos + 1 ) = lv_str_length.
         IF lv_component < ls_str_struc-columns.
-          RAISE EXCEPTION TYPE zcx_wd_csv_too_few_columns
+          RAISE RESUMABLE EXCEPTION TYPE zcx_wd_csv_too_few_columns
             EXPORTING
               line = lv_curr_line.
         ENDIF.
