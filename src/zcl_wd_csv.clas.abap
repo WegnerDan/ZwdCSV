@@ -541,7 +541,8 @@ CLASS zcl_wd_csv IMPLEMENTATION.
   METHOD set_separator.
 * ---------------------------------------------------------------------
     IF  iv_separator IS NOT INITIAL
-    AND iv_separator NA sy-abcde.
+    AND iv_separator NA sy-abcde
+    AND iv_separator NA '0123456789'.
       mv_separator = iv_separator.
     ELSE.
       RAISE EXCEPTION TYPE zcx_wd_csv_invalid_separator

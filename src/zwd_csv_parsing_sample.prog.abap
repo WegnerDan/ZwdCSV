@@ -26,7 +26,7 @@ DATA:
 
 *=======================================================================
 SELECTION-SCREEN BEGIN OF BLOCK bl0 WITH FRAME TITLE bl0_tit.
-PARAMETERS path TYPE string LOWER CASE.
+PARAMETERS path TYPE string LOWER CASE OBLIGATORY.
 SELECTION-SCREEN END OF BLOCK bl0.
 
 SELECTION-SCREEN BEGIN OF BLOCK bl1 WITH FRAME TITLE bl1_tit.

@@ -12,43 +12,43 @@
      <SPRSL>E</SPRSL>
      <ARBGB>ZWD_CSV</ARBGB>
      <MSGNR>000</MSGNR>
-     <TEXT>&amp;1&amp;2&amp;3&amp;4</TEXT>
+     <TEXT> &amp;1&amp;2&amp;3&amp;4</TEXT>
     </T100>
     <T100>
      <SPRSL>E</SPRSL>
      <ARBGB>ZWD_CSV</ARBGB>
      <MSGNR>001</MSGNR>
-     <TEXT>Invalid End-Of-Line character(s) &amp;1</TEXT>
+     <TEXT> Invalid End-Of-Line character(s) &amp;1</TEXT>
     </T100>
     <T100>
      <SPRSL>E</SPRSL>
      <ARBGB>ZWD_CSV</ARBGB>
      <MSGNR>002</MSGNR>
-     <TEXT>Too many columns in line &amp;1</TEXT>
+     <TEXT> Too many columns in line &amp;1</TEXT>
     </T100>
     <T100>
      <SPRSL>E</SPRSL>
      <ARBGB>ZWD_CSV</ARBGB>
      <MSGNR>003</MSGNR>
-     <TEXT>Too few columns in line &amp;1</TEXT>
+     <TEXT> Too few columns in line &amp;1</TEXT>
     </T100>
     <T100>
      <SPRSL>E</SPRSL>
      <ARBGB>ZWD_CSV</ARBGB>
      <MSGNR>004</MSGNR>
-     <TEXT>Unexpected End-Of-Line Character in Line &amp;1</TEXT>
+     <TEXT> Unexpected End-Of-Line Character in Line &amp;1</TEXT>
     </T100>
     <T100>
      <SPRSL>E</SPRSL>
      <ARBGB>ZWD_CSV</ARBGB>
      <MSGNR>005</MSGNR>
-     <TEXT>Invalid Separator Character &amp;1</TEXT>
+     <TEXT> Invalid Separator Character &amp;1</TEXT>
     </T100>
     <T100>
      <SPRSL>E</SPRSL>
      <ARBGB>ZWD_CSV</ARBGB>
      <MSGNR>006</MSGNR>
-     <TEXT>Invalid Delimiter Character &amp;1</TEXT>
+     <TEXT> Invalid Delimiter Character &amp;1</TEXT>
     </T100>
    </T100>
   </asx:values>
