@@ -12,45 +12,92 @@
      <SPRSL>E</SPRSL>
      <ARBGB>ZWD_CSV</ARBGB>
      <MSGNR>000</MSGNR>
-     <TEXT> &amp;1&amp;2&amp;3&amp;4</TEXT>
+     <TEXT>&amp;1&amp;2&amp;3&amp;4</TEXT>
     </T100>
     <T100>
      <SPRSL>E</SPRSL>
      <ARBGB>ZWD_CSV</ARBGB>
      <MSGNR>001</MSGNR>
-     <TEXT> Invalid End-Of-Line character(s) &amp;1</TEXT>
+     <TEXT>Invalid End-Of-Line character(s) &amp;1</TEXT>
     </T100>
     <T100>
      <SPRSL>E</SPRSL>
      <ARBGB>ZWD_CSV</ARBGB>
      <MSGNR>002</MSGNR>
-     <TEXT> Too many columns in line &amp;1</TEXT>
+     <TEXT>Too many columns in line &amp;1</TEXT>
     </T100>
     <T100>
      <SPRSL>E</SPRSL>
      <ARBGB>ZWD_CSV</ARBGB>
      <MSGNR>003</MSGNR>
-     <TEXT> Too few columns in line &amp;1</TEXT>
+     <TEXT>Too few columns in line &amp;1</TEXT>
     </T100>
     <T100>
      <SPRSL>E</SPRSL>
      <ARBGB>ZWD_CSV</ARBGB>
      <MSGNR>004</MSGNR>
-     <TEXT> Unexpected End-Of-Line Character in Line &amp;1</TEXT>
+     <TEXT>Unexpected End-Of-Line Character in Line &amp;1</TEXT>
     </T100>
     <T100>
      <SPRSL>E</SPRSL>
      <ARBGB>ZWD_CSV</ARBGB>
      <MSGNR>005</MSGNR>
-     <TEXT> Invalid Separator Character &amp;1</TEXT>
+     <TEXT>Invalid Separator Character &amp;1</TEXT>
     </T100>
     <T100>
      <SPRSL>E</SPRSL>
      <ARBGB>ZWD_CSV</ARBGB>
      <MSGNR>006</MSGNR>
-     <TEXT> Invalid Delimiter Character &amp;1</TEXT>
+     <TEXT>Invalid Delimiter Character &amp;1</TEXT>
     </T100>
    </T100>
+   <I18N_LANGS>
+    <LANGU>D</LANGU>
+   </I18N_LANGS>
+   <T100T>
+    <T100T>
+     <SPRSL>D</SPRSL>
+     <ARBGB>ZWD_CSV</ARBGB>
+     <STEXT>CSV Nachrichten</STEXT>
+    </T100T>
+   </T100T>
+   <T100_TEXTS>
+    <item>
+     <SPRSL>D</SPRSL>
+     <MSGNR>000</MSGNR>
+     <TEXT>&amp;1&amp;2&amp;3&amp;4</TEXT>
+    </item>
+    <item>
+     <SPRSL>D</SPRSL>
+     <MSGNR>001</MSGNR>
+     <TEXT>Ungültige(s) Zeilenende-Zeichen &amp;1</TEXT>
+    </item>
+    <item>
+     <SPRSL>D</SPRSL>
+     <MSGNR>002</MSGNR>
+     <TEXT>Zu viele Spalten in Zeile &amp;1</TEXT>
+    </item>
+    <item>
+     <SPRSL>D</SPRSL>
+     <MSGNR>003</MSGNR>
+     <TEXT>Zu wenige Spalten in Zeile &amp;1</TEXT>
+    </item>
+    <item>
+     <SPRSL>D</SPRSL>
+     <MSGNR>004</MSGNR>
+     <TEXT>Unerwartetes Zeilenende-Zeichen in Zeile &amp;1</TEXT>
+    </item>
+    <item>
+     <SPRSL>D</SPRSL>
+     <MSGNR>005</MSGNR>
+     <TEXT>Ungültiges Trennerzeichen &amp;1</TEXT>
+    </item>
+    <item>
+     <SPRSL>D</SPRSL>
+     <MSGNR>006</MSGNR>
+     <TEXT>Ungültiges Textqualifiziererzeichen &amp;1</TEXT>
+    </item>
+   </T100_TEXTS>
   </asx:values>
  </asx:abap>
 </abapGit>
