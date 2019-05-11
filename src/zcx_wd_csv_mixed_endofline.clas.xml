@@ -4,7 +4,6 @@
   <asx:values>
    <VSEOCLASS>
     <CLSNAME>ZCX_WD_CSV_MIXED_ENDOFLINE</CLSNAME>
-    <VERSION>1</VERSION>
     <LANGU>E</LANGU>
     <DESCRIPT>CSV Mixed end-of-line characters</DESCRIPT>
     <CATEGORY>40</CATEGORY>

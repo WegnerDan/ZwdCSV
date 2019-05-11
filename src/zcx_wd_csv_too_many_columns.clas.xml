@@ -4,7 +4,6 @@
   <asx:values>
    <VSEOCLASS>
     <CLSNAME>ZCX_WD_CSV_TOO_MANY_COLUMNS</CLSNAME>
-    <VERSION>1</VERSION>
     <LANGU>E</LANGU>
     <DESCRIPT>CSV Too many columns (mismatched)</DESCRIPT>
     <CATEGORY>40</CATEGORY>
