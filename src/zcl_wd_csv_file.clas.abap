@@ -265,14 +265,7 @@ CLASS zcl_wd_csv_file IMPLEMENTATION.
                                           CHANGING   data_tab   = lt_data
                                           EXCEPTIONS OTHERS     = 1             ).
     IF sy-subrc <> 0.
-      RAISE EXCEPTION TYPE zcx_wd_csv_gui_upload_failed
-        EXPORTING
-          textid = VALUE #( msgid = sy-msgid
-                            msgno = sy-msgno
-                            attr1 = sy-msgv1
-                            attr2 = sy-msgv2
-                            attr3 = sy-msgv3
-                            attr4 = sy-msgv4 ).
+      RAISE EXCEPTION TYPE zcx_wd_csv_gui_upload_failed.
     ENDIF.
 
 * ---------------------------------------------------------------------
@@ -338,14 +331,7 @@ CLASS zcl_wd_csv_file IMPLEMENTATION.
                                             CHANGING   data_tab     = lt_data
                                             EXCEPTIONS OTHERS       = 1              ).
     IF sy-subrc <> 0.
-      RAISE EXCEPTION TYPE zcx_wd_csv_gui_download_failed
-        EXPORTING
-          textid = VALUE #( msgid = sy-msgid
-                            msgno = sy-msgno
-                            attr1 = sy-msgv1
-                            attr2 = sy-msgv2
-                            attr3 = sy-msgv3
-                            attr4 = sy-msgv4 ).
+      RAISE EXCEPTION TYPE zcx_wd_csv_gui_download_failed.
     ENDIF.
 
 * ---------------------------------------------------------------------

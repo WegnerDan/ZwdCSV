@@ -1,19 +1,25 @@
 CLASS zcx_wd_csv_invalid_separator DEFINITION PUBLIC INHERITING FROM zcx_wd_csv_base FINAL CREATE PUBLIC.
   PUBLIC SECTION.
+    CONSTANTS:
+      BEGIN OF zcx_wd_csv_invalid_separator,
+        msgid TYPE symsgid VALUE 'ZWD_CSV',
+        msgno TYPE symsgno VALUE '005',
+        attr1 TYPE scx_attrname VALUE 'SEPARATOR',
+        attr2 TYPE scx_attrname VALUE '',
+        attr3 TYPE scx_attrname VALUE '',
+        attr4 TYPE scx_attrname VALUE '',
+      END OF zcx_wd_csv_invalid_separator.
     DATA:
-      separator TYPE zcl_wd_csv=>mty_separator.
+      separator TYPE zcl_wd_csv=>mty_separator READ-ONLY.
     METHODS:
-      constructor IMPORTING textid    LIKE if_t100_message=>t100key OPTIONAL
-                            previous  LIKE previous OPTIONAL
-                            separator TYPE zcl_wd_csv=>mty_separator.
+      constructor IMPORTING separator TYPE zcl_wd_csv=>mty_separator.
   PROTECTED SECTION.
   PRIVATE SECTION.
 ENDCLASS.
 
 
 
-CLASS ZCX_WD_CSV_INVALID_SEPARATOR IMPLEMENTATION.
-
+CLASS zcx_wd_csv_invalid_separator IMPLEMENTATION.
 
   METHOD constructor ##ADT_SUPPRESS_GENERATION.
 * ---------------------------------------------------------------------
@@ -26,14 +32,9 @@ CLASS ZCX_WD_CSV_INVALID_SEPARATOR IMPLEMENTATION.
     CLEAR me->textid.
 
 * ---------------------------------------------------------------------
-    IF textid IS INITIAL.
-      if_t100_message~t100key-msgid = 'ZWD_CSV'.
-      if_t100_message~t100key-msgno = '005'.
-      if_t100_message~t100key-attr1 = separator.
-    ELSE.
-      if_t100_message~t100key = textid.
-    ENDIF.
+    if_t100_message~t100key = zcx_wd_csv_invalid_separator.
 
 * ---------------------------------------------------------------------
   ENDMETHOD.
+
 ENDCLASS.

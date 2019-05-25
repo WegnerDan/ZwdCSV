@@ -1,4 +1,4 @@
-CLASS zcx_wd_csv_base DEFINITION PUBLIC INHERITING FROM cx_static_check CREATE PUBLIC.
+CLASS zcx_wd_csv_base DEFINITION PUBLIC INHERITING FROM cx_static_check ABSTRACT CREATE PUBLIC.
   PUBLIC SECTION.
     INTERFACES:
       if_t100_dyn_msg,
@@ -12,8 +12,7 @@ ENDCLASS.
 
 
 
-CLASS ZCX_WD_CSV_BASE IMPLEMENTATION.
-
+CLASS zcx_wd_csv_base IMPLEMENTATION.
 
   METHOD constructor ##ADT_SUPPRESS_GENERATION.
 * ---------------------------------------------------------------------
@@ -31,4 +30,5 @@ CLASS ZCX_WD_CSV_BASE IMPLEMENTATION.
 
 * ---------------------------------------------------------------------
   ENDMETHOD.
+
 ENDCLASS.
