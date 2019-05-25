@@ -224,8 +224,19 @@ CLASS lcl IMPLEMENTATION.
         cl_salv_table=>factory( IMPORTING r_salv_table = DATA(lo_salv_table)
                                 CHANGING  t_table      = <lt_data>           ).
 
+        DATA(lt_header_columns) = lo_csv_file->get_header_columns( ).
+
         LOOP AT lo_salv_table->get_columns( )->get( ) ASSIGNING FIELD-SYMBOL(<ls_col>).
-          <ls_col>-r_column->set_short_text( CONV #( sy-tabix ) ).
+          CASE header.
+            WHEN abap_true.
+              READ TABLE lt_header_columns INTO DATA(ls_header_column)
+              WITH KEY index = sy-tabix BINARY SEARCH.
+              IF sy-subrc = 0.
+                <ls_col>-r_column->set_short_text( CONV #( ls_header_column-name ) ).
+              ENDIF.
+            WHEN abap_false.
+              <ls_col>-r_column->set_short_text( CONV #( sy-tabix ) ).
+          ENDCASE.
         ENDLOOP.
 
         lo_salv_table->display( ).

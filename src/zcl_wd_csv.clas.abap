@@ -2,7 +2,12 @@ CLASS zcl_wd_csv DEFINITION PUBLIC CREATE PUBLIC.
   PUBLIC SECTION.
     TYPES:
       mty_separator TYPE c LENGTH 1,
-      mty_delimiter TYPE c LENGTH 1.
+      mty_delimiter TYPE c LENGTH 1,
+      BEGIN OF mty_s_header_column,
+        index TYPE i,
+        name  TYPE string,
+      END OF mty_s_header_column,
+      mty_t_header_column TYPE SORTED TABLE OF mty_s_header_column WITH UNIQUE KEY index.
     CONSTANTS:
       mc_default_separator TYPE mty_separator VALUE cl_abap_char_utilities=>horizontal_tab,
       mc_default_delimiter TYPE mty_delimiter VALUE '"',
@@ -29,6 +34,7 @@ CLASS zcl_wd_csv DEFINITION PUBLIC CREATE PUBLIC.
       generate_string IMPORTING iv_with_header TYPE abap_bool DEFAULT abap_false
                                 it_data        TYPE STANDARD TABLE
                       EXPORTING ev_csv_string  TYPE string,
+      get_header_columns RETURNING VALUE(rt_header_columns) TYPE mty_t_header_column,
       get_separator RETURNING VALUE(rv_separator) TYPE mty_separator,
       set_separator IMPORTING iv_separator TYPE mty_separator DEFAULT mc_default_separator
                     RAISING   zcx_wd_csv_invalid_separator,
@@ -55,18 +61,20 @@ CLASS zcl_wd_csv DEFINITION PUBLIC CREATE PUBLIC.
       END OF mty_s_comp_convex,
       mty_t_comp_convex TYPE SORTED TABLE OF mty_s_comp_convex WITH UNIQUE KEY name.
     DATA:
-      mv_endofline   TYPE string, " length can be 1 or 2 characters.
-      mv_separator   TYPE mty_separator,
-      mv_delimiter   TYPE mty_delimiter,
-      mv_conv_exit   TYPE abap_bool,
-      mv_trim_spaces TYPE abap_bool,
-      mv_ts_parse    TYPE timestampl,
-      mv_ts_convex   TYPE timestampl,
-      mt_comp_convex TYPE mty_t_comp_convex.
+      mv_endofline      TYPE string, " length can be 1 or 2 characters.
+      mv_separator      TYPE mty_separator,
+      mv_delimiter      TYPE mty_delimiter,
+      mv_conv_exit      TYPE abap_bool,
+      mv_trim_spaces    TYPE abap_bool,
+      mv_ts_parse       TYPE timestampl,
+      mv_ts_convex      TYPE timestampl,
+      mt_comp_convex    TYPE mty_t_comp_convex,
+      mt_header_columns TYPE mty_t_header_column.
     METHODS:
       create_string_struc IMPORTING it_data             TYPE ANY TABLE
                           RETURNING VALUE(rs_str_struc) TYPE mty_s_string_struc
                           RAISING   cx_sy_struct_creation,
+      fill_header_columns_tab IMPORTING is_header TYPE any,
       move_data IMPORTING iv_conv_exit   TYPE abap_bool
                           iv_trim_spaces TYPE abap_bool
                 CHANGING  cs_str         TYPE any
@@ -86,6 +94,61 @@ ENDCLASS.
 
 
 CLASS zcl_wd_csv IMPLEMENTATION.
+
+
+  METHOD call_conv_exits.
+* ---------------------------------------------------------------------
+    DATA:
+      lo_structdescr TYPE REF TO cl_abap_structdescr,
+      lv_conv_exit   TYPE funcname,
+      lr             TYPE REF TO data.
+    FIELD-SYMBOLS:
+      <lv_temp> TYPE any,
+      <lv_str>  TYPE any,
+      <lv_exp>  TYPE any.
+
+* ---------------------------------------------------------------------
+    IF mv_ts_convex <> mv_ts_parse.
+      mv_ts_convex = mv_ts_parse.
+      FREE mt_comp_convex.
+      lo_structdescr ?= cl_abap_structdescr=>describe_by_data( cs ).
+      LOOP AT lo_structdescr->get_included_view( ) ASSIGNING FIELD-SYMBOL(<ls_component>).
+*
+        CAST cl_abap_elemdescr( <ls_component>-type )->get_ddic_field( RECEIVING  p_flddescr = DATA(ls_dfies)
+                                                                       EXCEPTIONS OTHERS     = 1              ).
+        IF sy-subrc <> 0
+        OR ls_dfies-convexit IS INITIAL.
+          CONTINUE.
+        ENDIF.
+
+        CREATE DATA lr TYPE HANDLE <ls_component>-type.
+        INSERT VALUE #( name     = <ls_component>-name
+                        convexit = ls_dfies-convexit
+                        temp_fld = lr                  ) INTO TABLE mt_comp_convex.
+      ENDLOOP.
+    ENDIF.
+
+* ---------------------------------------------------------------------
+    LOOP AT mt_comp_convex ASSIGNING FIELD-SYMBOL(<ls>).
+      ASSIGN <ls>-temp_fld->* TO <lv_temp>.
+      FREE <lv_temp>.
+      ASSIGN COMPONENT <ls>-name OF STRUCTURE is TO <lv_str>.
+      ASSIGN COMPONENT <ls>-name OF STRUCTURE cs TO <lv_exp>.
+      lv_conv_exit = 'CONVERSION_EXIT_' && <ls>-convexit && '_INPUT'.
+      CALL FUNCTION lv_conv_exit
+        EXPORTING
+          input  = <lv_str>
+        IMPORTING
+          output = <lv_temp>
+        EXCEPTIONS
+          OTHERS = 1.
+      IF sy-subrc = 0.
+        <lv_exp> = <lv_temp>.
+      ENDIF.
+    ENDLOOP.
+
+* ---------------------------------------------------------------------
+  ENDMETHOD.
 
 
   METHOD constructor.
@@ -188,89 +251,6 @@ CLASS zcl_wd_csv IMPLEMENTATION.
   ENDMETHOD.
 
 
-  METHOD move_data.
-* ---------------------------------------------------------------------
-    MOVE-CORRESPONDING cs_str TO cs_exp.
-    IF iv_trim_spaces = abap_true.
-      trim_spaces( CHANGING cs = cs_exp ).
-    ENDIF.
-    IF iv_conv_exit = abap_true.
-      call_conv_exits( EXPORTING is = cs_str
-                       CHANGING  cs = cs_exp ).
-    ENDIF.
-    FREE cs_str.
-
-* ---------------------------------------------------------------------
-  ENDMETHOD.
-
-
-  METHOD call_conv_exits.
-* ---------------------------------------------------------------------
-    DATA:
-      lo_structdescr TYPE REF TO cl_abap_structdescr,
-      lv_conv_exit   TYPE funcname,
-      lr             TYPE REF TO data.
-    FIELD-SYMBOLS:
-      <lv_temp> TYPE any,
-      <lv_str>  TYPE any,
-      <lv_exp>  TYPE any.
-
-* ---------------------------------------------------------------------
-    IF mv_ts_convex <> mv_ts_parse.
-      mv_ts_convex = mv_ts_parse.
-      FREE mt_comp_convex.
-      lo_structdescr ?= cl_abap_structdescr=>describe_by_data( cs ).
-      LOOP AT lo_structdescr->get_included_view( ) ASSIGNING FIELD-SYMBOL(<ls_component>).
-*
-        CAST cl_abap_elemdescr( <ls_component>-type )->get_ddic_field( RECEIVING  p_flddescr = DATA(ls_dfies)
-                                                                       EXCEPTIONS OTHERS     = 1              ).
-        IF sy-subrc <> 0
-        OR ls_dfies-convexit IS INITIAL.
-          CONTINUE.
-        ENDIF.
-
-        CREATE DATA lr TYPE HANDLE <ls_component>-type.
-        INSERT VALUE #( name     = <ls_component>-name
-                        convexit = ls_dfies-convexit
-                        temp_fld = lr                  ) INTO TABLE mt_comp_convex.
-      ENDLOOP.
-    ENDIF.
-
-* ---------------------------------------------------------------------
-    LOOP AT mt_comp_convex ASSIGNING FIELD-SYMBOL(<ls>).
-      ASSIGN <ls>-temp_fld->* TO <lv_temp>.
-      FREE <lv_temp>.
-      ASSIGN COMPONENT <ls>-name OF STRUCTURE is TO <lv_str>.
-      ASSIGN COMPONENT <ls>-name OF STRUCTURE cs TO <lv_exp>.
-      lv_conv_exit = 'CONVERSION_EXIT_' && <ls>-convexit && '_INPUT'.
-      CALL FUNCTION lv_conv_exit
-        EXPORTING
-          input  = <lv_str>
-        IMPORTING
-          output = <lv_temp>
-        EXCEPTIONS
-          OTHERS = 1.
-      IF sy-subrc = 0.
-        <lv_exp> = <lv_temp>.
-      ENDIF.
-    ENDLOOP.
-
-* ---------------------------------------------------------------------
-  ENDMETHOD.
-
-
-  METHOD trim_spaces.
-* ---------------------------------------------------------------------
-    DO.
-      ASSIGN COMPONENT sy-index OF STRUCTURE cs TO FIELD-SYMBOL(<lv>).
-      IF sy-subrc <> 0. EXIT. ENDIF.
-      CONDENSE <lv>.
-    ENDDO.
-
-* ---------------------------------------------------------------------
-  ENDMETHOD.
-
-
   METHOD generate_string.
 * ---------------------------------------------------------------------
     DATA:
@@ -284,7 +264,7 @@ CLASS zcl_wd_csv IMPLEMENTATION.
       <lv_data>      TYPE data.
 
 * ---------------------------------------------------------------------
-    FREE ev_csv_string.
+    FREE: ev_csv_string, mt_header_columns.
 
 * ---------------------------------------------------------------------
     lo_tabledescr ?= cl_abap_typedescr=>describe_by_data( it_data ).
@@ -294,6 +274,10 @@ CLASS zcl_wd_csv IMPLEMENTATION.
 * ---------------------------------------------------------------------
     IF iv_with_header = abap_true.
       LOOP AT lt_components ASSIGNING <ls_component>.
+        INSERT VALUE #( index = sy-tabix
+                        name  = <ls_component>-name
+                      ) INTO TABLE mt_header_columns.
+
         IF ev_csv_string IS INITIAL.
           ev_csv_string = generate_cell( iv_fieldname   = <ls_component>-name
                                          iv_fieldtype   = <ls_component>-type
@@ -342,6 +326,84 @@ CLASS zcl_wd_csv IMPLEMENTATION.
   ENDMETHOD.
 
 
+  METHOD get_conv_exit.
+* ---------------------------------------------------------------------
+    rv_conv_exit = mv_conv_exit.
+
+* ---------------------------------------------------------------------
+  ENDMETHOD.
+
+
+  METHOD get_delimiter.
+* ---------------------------------------------------------------------
+    rv_delimiter = mv_delimiter.
+
+* ---------------------------------------------------------------------
+  ENDMETHOD.
+
+
+  METHOD get_endofline.
+* ---------------------------------------------------------------------
+    rv_endofline = mv_endofline.
+
+* ---------------------------------------------------------------------
+  ENDMETHOD.
+
+
+  METHOD fill_header_columns_tab.
+* ---------------------------------------------------------------------
+    DO.
+      ASSIGN COMPONENT sy-index OF STRUCTURE is_header TO FIELD-SYMBOL(<lv>).
+      IF sy-subrc <> 0. RETURN. ENDIF.
+      INSERT VALUE #( index = sy-index
+                      name  = <lv>
+                    ) INTO TABLE mt_header_columns.
+    ENDDO.
+
+* ---------------------------------------------------------------------
+  ENDMETHOD.
+
+
+  METHOD get_header_columns.
+* ---------------------------------------------------------------------
+    rt_header_columns = mt_header_columns.
+
+* ---------------------------------------------------------------------
+  ENDMETHOD.
+
+
+  METHOD get_separator.
+* ---------------------------------------------------------------------
+    rv_separator = mv_separator.
+
+* ---------------------------------------------------------------------
+  ENDMETHOD.
+
+
+  METHOD get_trim_spaces.
+* ---------------------------------------------------------------------
+    iv_trim_spaces = mv_trim_spaces.
+
+* ---------------------------------------------------------------------
+  ENDMETHOD.
+
+
+  METHOD move_data.
+* ---------------------------------------------------------------------
+    MOVE-CORRESPONDING cs_str TO cs_exp.
+    IF iv_trim_spaces = abap_true.
+      trim_spaces( CHANGING cs = cs_exp ).
+    ENDIF.
+    IF iv_conv_exit = abap_true.
+      call_conv_exits( EXPORTING is = cs_str
+                       CHANGING  cs = cs_exp ).
+    ENDIF.
+    FREE cs_str.
+
+* ---------------------------------------------------------------------
+  ENDMETHOD.
+
+
   METHOD parse_string.
 * ---------------------------------------------------------------------
     DATA:
@@ -384,6 +446,9 @@ CLASS zcl_wd_csv IMPLEMENTATION.
       CONTINUE.
 **********************************************************************
     END-OF-DEFINITION.
+
+* ---------------------------------------------------------------------
+    FREE: et_data, mt_header_columns.
 
 * ---------------------------------------------------------------------
     " for conv exit buffering
@@ -439,6 +504,7 @@ CLASS zcl_wd_csv IMPLEMENTATION.
           ENDIF.
           IF  lv_first_line = abap_true
           AND iv_has_header = abap_true.
+            fill_header_columns_tab( <ls_data_str> ).
             lv_first_line = abap_false.
             FREE <ls_data_str>.
             IF lv_component < ls_str_struc-columns.
@@ -530,33 +596,29 @@ CLASS zcl_wd_csv IMPLEMENTATION.
   ENDMETHOD.
 
 
-  METHOD get_separator.
+  METHOD set_conv_exit.
 * ---------------------------------------------------------------------
-    rv_separator = mv_separator.
+    CASE iv_conv_exit.
+      WHEN abap_false.
+        mv_conv_exit = abap_false.
+      WHEN OTHERS.
+        mv_conv_exit = abap_true.
+    ENDCASE.
 
 * ---------------------------------------------------------------------
   ENDMETHOD.
 
 
-  METHOD set_separator.
+  METHOD set_delimiter.
 * ---------------------------------------------------------------------
-    IF  iv_separator IS NOT INITIAL
-    AND iv_separator NA sy-abcde
-    AND iv_separator NA '0123456789'.
-      mv_separator = iv_separator.
+    IF iv_delimiter = ''''
+    OR iv_delimiter = '"'.
+      mv_delimiter = iv_delimiter.
     ELSE.
-      RAISE EXCEPTION TYPE zcx_wd_csv_invalid_separator
+      RAISE EXCEPTION TYPE zcx_wd_csv_invalid_delimiter
         EXPORTING
-          separator = iv_separator.
+          delimiter = iv_delimiter.
     ENDIF.
-
-* ---------------------------------------------------------------------
-  ENDMETHOD.
-
-
-  METHOD get_endofline.
-* ---------------------------------------------------------------------
-    rv_endofline = mv_endofline.
 
 * ---------------------------------------------------------------------
   ENDMETHOD.
@@ -579,53 +641,17 @@ CLASS zcl_wd_csv IMPLEMENTATION.
   ENDMETHOD.
 
 
-  METHOD get_delimiter.
+  METHOD set_separator.
 * ---------------------------------------------------------------------
-    rv_delimiter = mv_delimiter.
-
-* ---------------------------------------------------------------------
-  ENDMETHOD.
-
-
-  METHOD set_delimiter.
-* ---------------------------------------------------------------------
-    IF iv_delimiter = ''''
-    OR iv_delimiter = '"'.
-      mv_delimiter = iv_delimiter.
+    IF  iv_separator IS NOT INITIAL
+    AND iv_separator NA sy-abcde
+    AND iv_separator NA '0123456789'.
+      mv_separator = iv_separator.
     ELSE.
-      RAISE EXCEPTION TYPE zcx_wd_csv_invalid_delimiter
+      RAISE EXCEPTION TYPE zcx_wd_csv_invalid_separator
         EXPORTING
-          delimiter = iv_delimiter.
+          separator = iv_separator.
     ENDIF.
-
-* ---------------------------------------------------------------------
-  ENDMETHOD.
-
-
-  METHOD get_conv_exit.
-* ---------------------------------------------------------------------
-    rv_conv_exit = mv_conv_exit.
-
-* ---------------------------------------------------------------------
-  ENDMETHOD.
-
-
-  METHOD set_conv_exit.
-* ---------------------------------------------------------------------
-    CASE iv_conv_exit.
-      WHEN abap_false.
-        mv_conv_exit = abap_false.
-      WHEN OTHERS.
-        mv_conv_exit = abap_true.
-    ENDCASE.
-
-* ---------------------------------------------------------------------
-  ENDMETHOD.
-
-
-  METHOD get_trim_spaces.
-* ---------------------------------------------------------------------
-    iv_trim_spaces = mv_trim_spaces.
 
 * ---------------------------------------------------------------------
   ENDMETHOD.
@@ -639,6 +665,18 @@ CLASS zcl_wd_csv IMPLEMENTATION.
       WHEN OTHERS.
         mv_trim_spaces = abap_true.
     ENDCASE.
+
+* ---------------------------------------------------------------------
+  ENDMETHOD.
+
+
+  METHOD trim_spaces.
+* ---------------------------------------------------------------------
+    DO.
+      ASSIGN COMPONENT sy-index OF STRUCTURE cs TO FIELD-SYMBOL(<lv>).
+      IF sy-subrc <> 0. EXIT. ENDIF.
+      CONDENSE <lv>.
+    ENDDO.
 
 * ---------------------------------------------------------------------
   ENDMETHOD.
