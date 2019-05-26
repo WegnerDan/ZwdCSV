@@ -2,12 +2,12 @@ CLASS zcx_wd_csv_gui_upload_failed DEFINITION PUBLIC INHERITING FROM zcx_wd_csv_
   PUBLIC SECTION.
     CONSTANTS:
       BEGIN OF zcx_wd_csv_gui_upload_failed,
-        msgid TYPE symsgid VALUE 'SY-MSGID',
-        msgno TYPE symsgno VALUE '999',
-        attr1 TYPE scx_attrname VALUE 'SYST-MSGV1',
-        attr2 TYPE scx_attrname VALUE 'SYST-MSGV2',
-        attr3 TYPE scx_attrname VALUE 'SYST-MSGV3',
-        attr4 TYPE scx_attrname VALUE 'SYST-MSGV4',
+        msgid TYPE symsgid VALUE '00',
+        msgno TYPE symsgno VALUE '000',
+        attr1 TYPE scx_attrname VALUE 'SYST-MSGV1' ##MG_MISSING,
+        attr2 TYPE scx_attrname VALUE 'SYST-MSGV2' ##MG_MISSING,
+        attr3 TYPE scx_attrname VALUE 'SYST-MSGV3' ##MG_MISSING,
+        attr4 TYPE scx_attrname VALUE 'SYST-MSGV4' ##MG_MISSING,
       END OF zcx_wd_csv_gui_upload_failed.
     DATA:
       syst TYPE sy READ-ONLY.
