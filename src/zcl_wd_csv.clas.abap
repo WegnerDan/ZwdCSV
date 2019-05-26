@@ -537,7 +537,7 @@ CLASS zcl_wd_csv IMPLEMENTATION.
           CASE mv_endofline.
             WHEN mc_endofline_cr OR mc_endofline_lf.
               lv_str_pos_p1 = lv_str_pos + 1.
-            WHEN mc_endofline_cr_lf.
+            WHEN mc_endofline_cr_lf ##WHEN_DOUBLE_OK.
               lv_str_pos_p1 = lv_str_pos + 2.
           ENDCASE.
           IF iv_csv_string+lv_str_pos_p1 CO space.
