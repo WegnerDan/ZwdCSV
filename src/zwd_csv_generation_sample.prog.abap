@@ -112,15 +112,15 @@ CLASS lcl IMPLEMENTATION.
 * ---------------------------------------------------------------------
     CASE abap_true.
       WHEN del_dq.
-        mv_delimiter = '"'.
+        mv_delimiter = zcl_wd_csv=>mc_delimiter_double_quote.
       WHEN del_sq.
-        mv_delimiter = ''''.
+        mv_delimiter = zcl_wd_csv=>mc_delimiter_single_quote.
     ENDCASE.
 
 * ---------------------------------------------------------------------
     CASE abap_true.
       WHEN septab.
-        mv_separator = zcl_wd_csv=>mc_default_separator.
+        mv_separator = zcl_wd_csv=>mc_separator_tab.
       WHEN sepother.
         mv_separator = sep.
     ENDCASE.

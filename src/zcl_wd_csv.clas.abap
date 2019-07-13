@@ -9,15 +9,18 @@ CLASS zcl_wd_csv DEFINITION PUBLIC CREATE PUBLIC.
       END OF mty_s_header_column,
       mty_t_header_column TYPE SORTED TABLE OF mty_s_header_column WITH UNIQUE KEY index.
     CONSTANTS:
-      mc_default_separator TYPE mty_separator VALUE cl_abap_char_utilities=>horizontal_tab,
-      mc_default_delimiter TYPE mty_delimiter VALUE '"',
-      mc_endofline_lf      TYPE c LENGTH 1    VALUE cl_abap_char_utilities=>newline,
-      mc_endofline_cr_lf   TYPE c LENGTH 2    VALUE cl_abap_char_utilities=>cr_lf,
-      mc_endofline_cr      TYPE c LENGTH 1    VALUE cl_abap_char_utilities=>cr_lf.
+      mc_separator_tab          TYPE mty_separator VALUE cl_abap_char_utilities=>horizontal_tab,
+      mc_separator_semicolon    TYPE mty_separator VALUE ';',
+      mc_separator_comma        TYPE mty_separator VALUE ',',
+      mc_delimiter_single_quote TYPE mty_delimiter VALUE '''',
+      mc_delimiter_double_quote TYPE mty_delimiter VALUE '"',
+      mc_endofline_lf           TYPE c LENGTH 1    VALUE cl_abap_char_utilities=>newline,
+      mc_endofline_cr_lf        TYPE c LENGTH 2    VALUE cl_abap_char_utilities=>cr_lf,
+      mc_endofline_cr           TYPE c LENGTH 1    VALUE cl_abap_char_utilities=>cr_lf.
     METHODS:
       constructor IMPORTING iv_endofline   TYPE csequence     DEFAULT mc_endofline_cr_lf
-                            iv_separator   TYPE mty_separator DEFAULT mc_default_separator
-                            iv_delimiter   TYPE mty_delimiter DEFAULT mc_default_delimiter
+                            iv_separator   TYPE mty_separator DEFAULT mc_separator_tab
+                            iv_delimiter   TYPE mty_delimiter DEFAULT mc_delimiter_double_quote
                             iv_conv_exit   TYPE abap_bool     DEFAULT abap_false
                             iv_trim_spaces TYPE abap_bool     DEFAULT abap_false
                   RAISING   zcx_wd_csv_invalid_endofline
@@ -36,13 +39,13 @@ CLASS zcl_wd_csv DEFINITION PUBLIC CREATE PUBLIC.
                       EXPORTING ev_csv_string  TYPE string,
       get_header_columns RETURNING VALUE(rt_header_columns) TYPE mty_t_header_column,
       get_separator RETURNING VALUE(rv_separator) TYPE mty_separator,
-      set_separator IMPORTING iv_separator TYPE mty_separator DEFAULT mc_default_separator
+      set_separator IMPORTING iv_separator TYPE mty_separator DEFAULT mc_separator_tab
                     RAISING   zcx_wd_csv_invalid_separator,
       get_endofline RETURNING VALUE(rv_endofline) TYPE string,
       set_endofline IMPORTING iv_endofline TYPE csequence DEFAULT mc_endofline_cr_lf
                     RAISING   zcx_wd_csv_invalid_endofline,
       get_delimiter RETURNING VALUE(rv_delimiter) TYPE mty_delimiter,
-      set_delimiter IMPORTING iv_delimiter TYPE mty_delimiter DEFAULT mc_default_delimiter
+      set_delimiter IMPORTING iv_delimiter TYPE mty_delimiter DEFAULT mc_delimiter_double_quote
                     RAISING   zcx_wd_csv_invalid_delimiter,
       get_conv_exit RETURNING VALUE(rv_conv_exit) TYPE abap_bool,
       set_conv_exit IMPORTING iv_conv_exit TYPE abap_bool DEFAULT abap_true,
