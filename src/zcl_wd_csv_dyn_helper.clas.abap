@@ -113,6 +113,16 @@ CLASS zcl_wd_csv_dyn_helper IMPLEMENTATION.
     ) TO lt_eol_count.
 
 * ----------------------------------------------------------------------
+    LOOP AT lt_eol_count ASSIGNING FIELD-SYMBOL(<ls_eol_count>).
+      IF <ls_eol_count>-count <> 0.
+        DATA(lv_eol_guessed) = abap_true.
+      ENDIF.
+    ENDLOOP.
+    IF lv_eol_guessed = abap_false.
+      RETURN.
+    ENDIF.
+
+* ----------------------------------------------------------------------
     IF  lt_eol_count[ 1 ]-count = lt_eol_count[ 2 ]-count
     AND lt_eol_count[ 1 ]-count = lt_eol_count[ 3 ]-count.
       " all line ending chars occur the same number of times
@@ -162,6 +172,16 @@ CLASS zcl_wd_csv_dyn_helper IMPLEMENTATION.
     ) TO lt_delimiter_count.
 
 * ----------------------------------------------------------------------
+    LOOP AT lt_delimiter_count ASSIGNING FIELD-SYMBOL(<ls_del_count>).
+      IF <ls_del_count>-count <> 0.
+        DATA(lv_del_guessed) = abap_true.
+      ENDIF.
+    ENDLOOP.
+    IF lv_del_guessed = abap_false.
+      RETURN.
+    ENDIF.
+
+* ----------------------------------------------------------------------
     SORT lt_delimiter_count BY count DESCENDING.
     rv_delimiter = lt_delimiter_count[ 1 ]-delimiter.
 
@@ -202,6 +222,16 @@ CLASS zcl_wd_csv_dyn_helper IMPLEMENTATION.
                     count = count( val = lv_csv_string
                                    sub = zcl_wd_csv=>mc_separator_tab )
     ) TO lt_separator_count.
+
+* ----------------------------------------------------------------------
+    LOOP AT lt_separator_count ASSIGNING FIELD-SYMBOL(<ls_sep_count>).
+      IF <ls_sep_count>-count <> 0.
+        DATA(lv_sep_guessed) = abap_true.
+      ENDIF.
+    ENDLOOP.
+    IF lv_sep_guessed = abap_false.
+      RETURN.
+    ENDIF.
 
 * ----------------------------------------------------------------------
     SORT lt_separator_count BY count DESCENDING.
