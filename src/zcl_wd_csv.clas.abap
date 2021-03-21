@@ -18,9 +18,9 @@ CLASS zcl_wd_csv DEFINITION PUBLIC CREATE PUBLIC.
       mc_endofline_cr_lf        TYPE c LENGTH 2    VALUE cl_abap_char_utilities=>cr_lf,
       mc_endofline_cr           TYPE c LENGTH 1    VALUE cl_abap_char_utilities=>cr_lf.
     METHODS:
-      constructor IMPORTING iv_endofline   TYPE csequence     DEFAULT mc_endofline_cr_lf
-                            iv_separator   TYPE mty_separator DEFAULT mc_separator_tab
-                            iv_delimiter   TYPE mty_delimiter DEFAULT mc_delimiter_double_quote
+      constructor IMPORTING iv_endofline   TYPE csequence     DEFAULT zcl_wd_csv=>mc_endofline_cr_lf
+                            iv_separator   TYPE mty_separator DEFAULT zcl_wd_csv=>mc_separator_tab
+                            iv_delimiter   TYPE mty_delimiter DEFAULT zcl_wd_csv=>mc_delimiter_double_quote
                             iv_conv_exit   TYPE abap_bool     DEFAULT abap_false
                             iv_trim_spaces TYPE abap_bool     DEFAULT abap_false
                   RAISING   zcx_wd_csv_invalid_endofline
@@ -39,13 +39,13 @@ CLASS zcl_wd_csv DEFINITION PUBLIC CREATE PUBLIC.
                       EXPORTING ev_csv_string  TYPE string,
       get_header_columns RETURNING VALUE(rt_header_columns) TYPE mty_t_header_column,
       get_separator RETURNING VALUE(rv_separator) TYPE mty_separator,
-      set_separator IMPORTING iv_separator TYPE mty_separator DEFAULT mc_separator_tab
+      set_separator IMPORTING iv_separator TYPE mty_separator DEFAULT zcl_wd_csv=>mc_separator_tab
                     RAISING   zcx_wd_csv_invalid_separator,
       get_endofline RETURNING VALUE(rv_endofline) TYPE string,
-      set_endofline IMPORTING iv_endofline TYPE csequence DEFAULT mc_endofline_cr_lf
+      set_endofline IMPORTING iv_endofline TYPE csequence DEFAULT zcl_wd_csv=>mc_endofline_cr_lf
                     RAISING   zcx_wd_csv_invalid_endofline,
       get_delimiter RETURNING VALUE(rv_delimiter) TYPE mty_delimiter,
-      set_delimiter IMPORTING iv_delimiter TYPE mty_delimiter DEFAULT mc_delimiter_double_quote
+      set_delimiter IMPORTING iv_delimiter TYPE mty_delimiter DEFAULT zcl_wd_csv=>mc_delimiter_double_quote
                     RAISING   zcx_wd_csv_invalid_delimiter,
       get_conv_exit RETURNING VALUE(rv_conv_exit) TYPE abap_bool,
       set_conv_exit IMPORTING iv_conv_exit TYPE abap_bool DEFAULT abap_true,

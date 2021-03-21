@@ -4,9 +4,9 @@ CLASS zcl_wd_csv_file DEFINITION PUBLIC INHERITING FROM zcl_wd_csv CREATE PUBLIC
       constructor IMPORTING iv_encoding    TYPE abap_encod    DEFAULT '4110'
                             iv_replacement TYPE abap_repl     DEFAULT '#'
                             iv_ignore_cerr TYPE abap_bool     DEFAULT abap_true
-                            iv_endofline   TYPE csequence     DEFAULT mc_endofline_cr_lf
-                            iv_separator   TYPE mty_separator DEFAULT mc_separator_tab
-                            iv_delimiter   TYPE mty_delimiter DEFAULT mc_delimiter_double_quote
+                            iv_endofline   TYPE csequence     DEFAULT zcl_wd_csv=>mc_endofline_cr_lf
+                            iv_separator   TYPE mty_separator DEFAULT zcl_wd_csv=>mc_separator_tab
+                            iv_delimiter   TYPE mty_delimiter DEFAULT zcl_wd_csv=>mc_delimiter_double_quote
                             iv_conv_exit   TYPE abap_bool     DEFAULT abap_false
                   RAISING   zcx_wd_csv_invalid_endofline
                             zcx_wd_csv_invalid_separator
