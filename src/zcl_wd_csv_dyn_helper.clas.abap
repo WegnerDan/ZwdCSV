@@ -12,6 +12,12 @@ CLASS zcl_wd_csv_dyn_helper DEFINITION PUBLIC CREATE PRIVATE.
       guess_endofline_4str IMPORTING iv_csv_string       TYPE string
                                      iv_guess_char_count TYPE i DEFAULT zcl_wd_csv_dyn_helper=>mc_guess_char_count
                            RETURNING VALUE(rv_endofline) TYPE string,
+      guess_separator_4str IMPORTING iv_csv_string       TYPE string
+                                     iv_guess_char_count TYPE i DEFAULT zcl_wd_csv_dyn_helper=>mc_guess_char_count
+                           RETURNING VALUE(rv_separator) TYPE zcl_wd_csv=>mty_separator,
+      guess_delimiter_4str IMPORTING iv_csv_string       TYPE string
+                                     iv_guess_char_count TYPE i DEFAULT zcl_wd_csv_dyn_helper=>mc_guess_char_count
+                           RETURNING VALUE(rv_delimiter) TYPE zcl_wd_csv=>mty_delimiter,
       generate_struct_type_4str IMPORTING iv_csv_string              TYPE string
                                           iv_endofline               TYPE csequence                 DEFAULT zcl_wd_csv=>mc_endofline_cr_lf
                                           iv_separator               TYPE zcl_wd_csv=>mty_separator DEFAULT zcl_wd_csv=>mc_separator_tab
@@ -120,6 +126,86 @@ CLASS zcl_wd_csv_dyn_helper IMPLEMENTATION.
     " this will return the wrong eol if any delimited eol chars exist
     SORT lt_eol_count BY count DESCENDING.
     rv_endofline = lt_eol_count[ 1 ]-eol.
+
+* ----------------------------------------------------------------------
+  ENDMETHOD.
+
+
+  METHOD guess_delimiter_4str.
+* ----------------------------------------------------------------------
+    " this method tries to guess the delimiter character based on the number of occurences
+* ----------------------------------------------------------------------
+    TYPES:
+      BEGIN OF lty_s_delimiter_count,
+        delimiter TYPE string,
+        count     TYPE i,
+      END OF lty_s_delimiter_count,
+      lty_t_delimiter_count TYPE STANDARD TABLE OF lty_s_delimiter_count WITH DEFAULT KEY.
+    DATA:
+      lt_delimiter_count TYPE lty_t_delimiter_count.
+
+* ----------------------------------------------------------------------
+    IF strlen( iv_csv_string ) > iv_guess_char_count.
+      DATA(lv_csv_string) = iv_csv_string(iv_guess_char_count).
+    ELSE.
+      lv_csv_string = iv_csv_string.
+    ENDIF.
+
+* ----------------------------------------------------------------------
+    APPEND VALUE #( delimiter = zcl_wd_csv=>mc_delimiter_single_quote
+                    count = count( val = lv_csv_string
+                                   sub = zcl_wd_csv=>mc_delimiter_single_quote )
+    ) TO lt_delimiter_count.
+    APPEND VALUE #( delimiter = zcl_wd_csv=>mc_delimiter_double_quote
+                    count = count( val = lv_csv_string
+                                   sub = zcl_wd_csv=>mc_delimiter_double_quote )
+    ) TO lt_delimiter_count.
+
+* ----------------------------------------------------------------------
+    SORT lt_delimiter_count BY count DESCENDING.
+    rv_delimiter = lt_delimiter_count[ 1 ]-delimiter.
+
+* ----------------------------------------------------------------------
+  ENDMETHOD.
+
+
+  METHOD guess_separator_4str.
+* ----------------------------------------------------------------------
+    " this method tries to guess the separator character based on the number of occurences
+* ----------------------------------------------------------------------
+    TYPES:
+      BEGIN OF lty_s_separator_count,
+        separator TYPE string,
+        count     TYPE i,
+      END OF lty_s_separator_count,
+      lty_t_separator_count TYPE STANDARD TABLE OF lty_s_separator_count WITH DEFAULT KEY.
+    DATA:
+      lt_separator_count TYPE lty_t_separator_count.
+
+* ----------------------------------------------------------------------
+    IF strlen( iv_csv_string ) > iv_guess_char_count.
+      DATA(lv_csv_string) = iv_csv_string(iv_guess_char_count).
+    ELSE.
+      lv_csv_string = iv_csv_string.
+    ENDIF.
+
+* ----------------------------------------------------------------------
+    APPEND VALUE #( separator = zcl_wd_csv=>mc_separator_comma
+                    count = count( val = lv_csv_string
+                                   sub = zcl_wd_csv=>mc_separator_comma )
+    ) TO lt_separator_count.
+    APPEND VALUE #( separator = zcl_wd_csv=>mc_separator_semicolon
+                    count = count( val = lv_csv_string
+                                   sub = zcl_wd_csv=>mc_separator_semicolon )
+    ) TO lt_separator_count.
+    APPEND VALUE #( separator = zcl_wd_csv=>mc_separator_tab
+                    count = count( val = lv_csv_string
+                                   sub = zcl_wd_csv=>mc_separator_tab )
+    ) TO lt_separator_count.
+
+* ----------------------------------------------------------------------
+    SORT lt_separator_count BY count DESCENDING.
+    rv_separator = lt_separator_count[ 1 ]-separator.
 
 * ----------------------------------------------------------------------
   ENDMETHOD.
