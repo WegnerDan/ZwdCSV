@@ -31,6 +31,7 @@ CLASS zcl_wd_csv DEFINITION PUBLIC CREATE PUBLIC.
                    EXPORTING et_data       TYPE STANDARD TABLE
                    RAISING   cx_sy_struct_creation
                              cx_sy_conversion_error
+                             cx_sy_range_out_of_bounds
                              RESUMABLE(zcx_wd_csv_too_many_columns)
                              RESUMABLE(zcx_wd_csv_too_few_columns)
                              RESUMABLE(zcx_wd_csv_mixed_endofline),
@@ -90,7 +91,9 @@ CLASS zcl_wd_csv DEFINITION PUBLIC CREATE PUBLIC.
                               iv_data        TYPE any
                               iv_conv_exit   TYPE abap_bool
                               iv_trim_spaces TYPE abap_bool
-                    RETURNING VALUE(rv_cell) TYPE string.
+                    RETURNING VALUE(rv_cell) TYPE string,
+      contains_only_empty_lines IMPORTING iv        TYPE any
+                                RETURNING VALUE(rv) TYPE abap_bool.
   PRIVATE SECTION.
 ENDCLASS.
 
@@ -174,6 +177,31 @@ CLASS zcl_wd_csv IMPLEMENTATION.
   ENDMETHOD.
 
 
+  METHOD contains_only_empty_lines.
+* ---------------------------------------------------------------------
+    CASE strlen( mv_endofline ).
+      WHEN 1.
+        IF iv CO ` ` && mv_endofline.
+          rv = abap_true.
+        ENDIF.
+      WHEN 2.
+        " CO alone is not sufficient in case of 2 character end of line
+        " first check if only end of line and space are contaned for speed (CO does not care about the order of the characters)
+        " then check if a the string without end of line characters contains only spaces
+        " only if both are true, return true
+        IF iv CO ` ` && mv_endofline
+        AND replace( val  = iv
+                     with = space
+                     occ  = 0
+                     sub  = mv_endofline ) CO ` `.
+          rv = abap_true.
+        ENDIF.
+    ENDCASE.
+
+* ---------------------------------------------------------------------
+  ENDMETHOD.
+
+
   METHOD create_string_struc.
 * ---------------------------------------------------------------------
     " create structure with string components and the same component names
@@ -200,6 +228,20 @@ CLASS zcl_wd_csv IMPLEMENTATION.
     rs_str_struc-columns = lines( lt_components_str ).
     lo_structdescr = cl_abap_structdescr=>create( lt_components_str ).
     CREATE DATA rs_str_struc-ref TYPE HANDLE lo_structdescr.
+
+* ---------------------------------------------------------------------
+  ENDMETHOD.
+
+
+  METHOD fill_header_columns_tab.
+* ---------------------------------------------------------------------
+    DO.
+      ASSIGN COMPONENT sy-index OF STRUCTURE is_header TO FIELD-SYMBOL(<lv>).
+      IF sy-subrc <> 0. RETURN. ENDIF.
+      INSERT VALUE #( index = sy-index
+                      name  = <lv>
+                    ) INTO TABLE mt_header_columns.
+    ENDDO.
 
 * ---------------------------------------------------------------------
   ENDMETHOD.
@@ -348,20 +390,6 @@ CLASS zcl_wd_csv IMPLEMENTATION.
   METHOD get_endofline.
 * ---------------------------------------------------------------------
     rv_endofline = mv_endofline.
-
-* ---------------------------------------------------------------------
-  ENDMETHOD.
-
-
-  METHOD fill_header_columns_tab.
-* ---------------------------------------------------------------------
-    DO.
-      ASSIGN COMPONENT sy-index OF STRUCTURE is_header TO FIELD-SYMBOL(<lv>).
-      IF sy-subrc <> 0. RETURN. ENDIF.
-      INSERT VALUE #( index = sy-index
-                      name  = <lv>
-                    ) INTO TABLE mt_header_columns.
-    ENDDO.
 
 * ---------------------------------------------------------------------
   ENDMETHOD.
@@ -532,11 +560,7 @@ CLASS zcl_wd_csv IMPLEMENTATION.
               EXPORTING
                 line = lv_curr_line.
           ENDIF.
-          IF lv_component < ls_str_struc-columns.
-            RAISE RESUMABLE EXCEPTION TYPE zcx_wd_csv_too_few_columns
-              EXPORTING
-                line = lv_curr_line.
-          ENDIF.
+          " check if rest of string is empty and parsing is finished
           CASE mv_endofline.
             WHEN mc_endofline_cr OR mc_endofline_lf.
               lv_str_pos_p1 = lv_str_pos + 1.
@@ -554,6 +578,20 @@ CLASS zcl_wd_csv IMPLEMENTATION.
                        CHANGING  cs_str = <ls_data_str>
                                  cs_exp = <ls_data_exp>          ).
             EXIT.
+            " Without && '' syntax check complains:
+            " "Offsets or lengths cannot be specified for fields of type "STRING" or "XSTRING" in the current statement"
+          ELSEIF contains_only_empty_lines( iv_csv_string+lv_str_pos_p1 && '' ).
+            move_data( EXPORTING iv_conv_exit   = mv_conv_exit
+                                 iv_trim_spaces = mv_trim_spaces
+                       CHANGING  cs_str = <ls_data_str>
+                                 cs_exp = <ls_data_exp>          ).
+            EXIT.
+          ENDIF.
+          " rest of string not empty (not only spaces/endofline chars)
+          IF lv_component < ls_str_struc-columns.
+            RAISE RESUMABLE EXCEPTION TYPE zcx_wd_csv_too_few_columns
+              EXPORTING
+                line = lv_curr_line.
           ENDIF.
           move_data( EXPORTING iv_conv_exit   = mv_conv_exit
                                iv_trim_spaces = mv_trim_spaces
@@ -683,5 +721,4 @@ CLASS zcl_wd_csv IMPLEMENTATION.
 
 * ---------------------------------------------------------------------
   ENDMETHOD.
-
 ENDCLASS.
