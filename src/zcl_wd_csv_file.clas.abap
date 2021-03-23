@@ -59,13 +59,7 @@ CLASS zcl_wd_csv_file DEFINITION PUBLIC INHERITING FROM zcl_wd_csv CREATE PUBLIC
                                     cx_parameter_invalid_range
                                     cx_sy_codepage_converter_init
                                     cx_sy_conversion_codepage
-                                    cx_parameter_invalid_type.
-  PROTECTED SECTION.
-    DATA:
-      mv_encoding    TYPE abap_encod,
-      mv_replacement TYPE abap_repl,
-      mv_ignore_cerr TYPE abap_bool.
-    METHODS:
+                                    cx_parameter_invalid_type,
       decode_xstring IMPORTING iv_xstring TYPE xstring
                      EXPORTING ev_string  TYPE string
                      RAISING   cx_parameter_invalid_range
@@ -112,6 +106,11 @@ CLASS zcl_wd_csv_file DEFINITION PUBLIC INHERITING FROM zcl_wd_csv CREATE PUBLIC
                                  cx_sy_codepage_converter_init
                                  cx_sy_conversion_codepage
                                  cx_parameter_invalid_type.
+  PROTECTED SECTION.
+    DATA:
+      mv_encoding    TYPE abap_encod,
+      mv_replacement TYPE abap_repl,
+      mv_ignore_cerr TYPE abap_bool.
   PRIVATE SECTION.
 ENDCLASS.
 
