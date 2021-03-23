@@ -15,7 +15,14 @@ CLASS zcl_wd_csv_dyn_helper DEFINITION PUBLIC CREATE PRIVATE.
       guess_endofline_4appl_file IMPORTING iv_path             TYPE string
                                            iv_encoding         TYPE abap_encod DEFAULT '4110'
                                            iv_guess_char_count TYPE i          DEFAULT zcl_wd_csv_dyn_helper=>mc_guess_char_count
-                                 RETURNING VALUE(rv_endofline) TYPE string,
+                                 RETURNING VALUE(rv_endofline) TYPE string
+                                 RAISING   cx_sy_file_open
+                                           cx_sy_codepage_converter_init
+                                           cx_sy_conversion_codepage
+                                           cx_sy_file_authority
+                                           cx_sy_file_io
+                                           cx_sy_file_open_mode
+                                           cx_sy_file_close,
       guess_endofline_4lcl_file IMPORTING iv_path             TYPE string
                                           iv_encoding         TYPE abap_encod DEFAULT '4110'
                                           iv_guess_char_count TYPE i          DEFAULT zcl_wd_csv_dyn_helper=>mc_guess_char_count
@@ -54,11 +61,23 @@ CLASS zcl_wd_csv_dyn_helper DEFINITION PUBLIC CREATE PRIVATE.
       guess_delimiter_4appl_file IMPORTING iv_path             TYPE string
                                            iv_encoding         TYPE abap_encod DEFAULT '4110'
                                            iv_guess_char_count TYPE i          DEFAULT zcl_wd_csv_dyn_helper=>mc_guess_char_count
-                                 RETURNING VALUE(rv_delimiter) TYPE zcl_wd_csv=>mty_delimiter,
+                                 RETURNING VALUE(rv_delimiter) TYPE zcl_wd_csv=>mty_delimiter
+                                 RAISING   cx_sy_file_open
+                                           cx_sy_codepage_converter_init
+                                           cx_sy_conversion_codepage
+                                           cx_sy_file_authority
+                                           cx_sy_file_io
+                                           cx_sy_file_open_mode
+                                           cx_sy_file_close,
       guess_delimiter_4lcl_file IMPORTING iv_path             TYPE string
                                           iv_encoding         TYPE abap_encod DEFAULT '4110'
                                           iv_guess_char_count TYPE i          DEFAULT zcl_wd_csv_dyn_helper=>mc_guess_char_count
-                                RETURNING VALUE(rv_delimiter) TYPE zcl_wd_csv=>mty_delimiter,
+                                RETURNING VALUE(rv_delimiter) TYPE zcl_wd_csv=>mty_delimiter
+                                RAISING   zcx_wd_csv_gui_upload_failed
+                                          cx_parameter_invalid_range
+                                          cx_sy_codepage_converter_init
+                                          cx_sy_conversion_codepage
+                                          cx_parameter_invalid_type,
       generate_struct_type_4str IMPORTING iv_csv_string              TYPE string
                                           iv_endofline               TYPE csequence                 DEFAULT zcl_wd_csv=>mc_endofline_cr_lf
                                           iv_separator               TYPE zcl_wd_csv=>mty_separator DEFAULT zcl_wd_csv=>mc_separator_tab
@@ -657,8 +676,8 @@ CLASS zcl_wd_csv_dyn_helper IMPLEMENTATION.
     TRY.
         NEW zcl_wd_csv_file( iv_encoding    = iv_encoding
                              iv_replacement = '#'
-                             iv_ignore_cerr = abap_true   )->read_file_appl( EXPORTING iv_path       = iv_path
-                                                                             IMPORTING ev_csv_string = DATA(lv_csv_string) ).
+                             iv_ignore_cerr = abap_true   )->read_file_local( EXPORTING iv_path       = iv_path
+                                                                              IMPORTING ev_csv_string = DATA(lv_csv_string) ).
       CATCH zcx_wd_csv_invalid_delimiter zcx_wd_csv_invalid_endofline zcx_wd_csv_invalid_separator.
     ENDTRY.
 
