@@ -232,16 +232,37 @@ CLASS zcl_wd_csv_file IMPLEMENTATION.
   METHOD read_file_appl.
 * ---------------------------------------------------------------------
     DATA:
-      lv_csv_xstring TYPE xstring.
+      lv_csv_xstring TYPE xstring,
+      lv_message     TYPE string.
 
 * ---------------------------------------------------------------------
-    OPEN DATASET iv_path FOR INPUT IN BINARY MODE.
+    OPEN DATASET iv_path FOR INPUT IN BINARY MODE MESSAGE lv_message.
+    IF sy-subrc <> 0.
+      RAISE EXCEPTION TYPE cx_sy_file_io
+        EXPORTING
+          textid    = cx_sy_file_io=>read_error
+          filename  = cl_fs_path=>create( name = iv_path )->get_file_name( )
+          errorcode = -1
+          errortext = lv_message.
+    ENDIF.
 
 * ---------------------------------------------------------------------
     READ DATASET iv_path INTO lv_csv_xstring.
+    IF sy-subrc <> 0.
+      RAISE EXCEPTION TYPE cx_sy_file_io
+        EXPORTING
+          textid   = cx_sy_file_io=>cx_sy_file_access_error
+          filename = cl_fs_path=>create( name = iv_path )->get_file_name( ).
+    ENDIF.
 
 * ---------------------------------------------------------------------
     CLOSE DATASET iv_path.
+    IF sy-subrc <> 0.
+      RAISE EXCEPTION TYPE cx_sy_file_io
+        EXPORTING
+          textid   = cx_sy_file_io=>cx_sy_file_access_error
+          filename = cl_fs_path=>create( name = iv_path )->get_file_name( ).
+    ENDIF.
 
 * ---------------------------------------------------------------------
     decode_xstring( EXPORTING iv_xstring = lv_csv_xstring
@@ -287,20 +308,41 @@ CLASS zcl_wd_csv_file IMPLEMENTATION.
   METHOD write_file_appl.
 * ---------------------------------------------------------------------
     DATA:
-      lv_csv_xstring TYPE xstring.
+      lv_csv_xstring TYPE xstring,
+      lv_message     TYPE string.
 
 * ---------------------------------------------------------------------
     encode_string( EXPORTING iv_string  = iv_csv_string
                    IMPORTING ev_xstring = lv_csv_xstring ).
 
 * ---------------------------------------------------------------------
-    OPEN DATASET iv_path FOR OUTPUT IN BINARY MODE.
+    OPEN DATASET iv_path FOR OUTPUT IN BINARY MODE MESSAGE lv_message.
+    IF sy-subrc <> 0.
+      RAISE EXCEPTION TYPE cx_sy_file_io
+        EXPORTING
+          textid    = cx_sy_file_io=>write_error
+          filename  = cl_fs_path=>create( name = iv_path )->get_file_name( )
+          errorcode = -1
+          errortext = lv_message.
+    ENDIF.
 
 * ---------------------------------------------------------------------
     TRANSFER lv_csv_xstring TO iv_path.
+    IF sy-subrc <> 0.
+      RAISE EXCEPTION TYPE cx_sy_file_io
+        EXPORTING
+          textid   = cx_sy_file_io=>cx_sy_file_access_error
+          filename = cl_fs_path=>create( name = iv_path )->get_file_name( ).
+    ENDIF.
 
 * ---------------------------------------------------------------------
     CLOSE DATASET iv_path.
+    IF sy-subrc <> 0.
+      RAISE EXCEPTION TYPE cx_sy_file_io
+        EXPORTING
+          textid   = cx_sy_file_io=>cx_sy_file_access_error
+          filename = cl_fs_path=>create( name = iv_path )->get_file_name( ).
+    ENDIF.
 
 * ---------------------------------------------------------------------
   ENDMETHOD.
