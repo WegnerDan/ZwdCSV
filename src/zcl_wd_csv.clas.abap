@@ -302,6 +302,8 @@ CLASS zcl_wd_csv IMPLEMENTATION.
       lo_tabledescr    TYPE REF TO cl_abap_tabledescr,
       lo_structdescr   TYPE REF TO cl_abap_structdescr,
       lt_components    TYPE abap_component_view_tab,
+      lv_line          TYPE string,
+      lt_lines         TYPE STANDARD TABLE OF string WITH EMPTY KEY,
       lv_start_newline TYPE abap_bool.
     FIELD-SYMBOLS:
       <ls_component> TYPE abap_simple_componentdescr,
@@ -323,21 +325,22 @@ CLASS zcl_wd_csv IMPLEMENTATION.
                         name  = <ls_component>-name
                       ) INTO TABLE mt_header_columns.
 
-        IF ev_csv_string IS INITIAL.
-          ev_csv_string = generate_cell( iv_fieldname   = <ls_component>-name
-                                         iv_fieldtype   = <ls_component>-type
-                                         iv_data        = <ls_component>-name
-                                         iv_conv_exit   = mv_conv_exit
-                                         iv_trim_spaces = mv_trim_spaces       ).
+        IF lv_line IS INITIAL.
+          lv_line = generate_cell( iv_fieldname   = <ls_component>-name
+                                   iv_fieldtype   = <ls_component>-type
+                                   iv_data        = <ls_component>-name
+                                   iv_conv_exit   = mv_conv_exit
+                                   iv_trim_spaces = mv_trim_spaces       ).
         ELSE.
-          ev_csv_string = ev_csv_string && mv_separator && generate_cell( iv_fieldname   = <ls_component>-name
-                                                                          iv_fieldtype   = <ls_component>-type
-                                                                          iv_data        = <ls_component>-name
-                                                                          iv_conv_exit   = mv_conv_exit
-                                                                          iv_trim_spaces = mv_trim_spaces       ).
+          lv_line = lv_line && mv_separator && generate_cell( iv_fieldname   = <ls_component>-name
+                                                              iv_fieldtype   = <ls_component>-type
+                                                              iv_data        = <ls_component>-name
+                                                              iv_conv_exit   = mv_conv_exit
+                                                              iv_trim_spaces = mv_trim_spaces       ).
         ENDIF.
       ENDLOOP.
-      ev_csv_string = ev_csv_string && mv_endofline.
+      lv_line = lv_line && mv_endofline.
+      APPEND lv_line TO lt_lines.
     ENDIF.
 
 * ---------------------------------------------------------------------
@@ -345,27 +348,31 @@ CLASS zcl_wd_csv IMPLEMENTATION.
 
 * ---------------------------------------------------------------------
     LOOP AT it_data ASSIGNING <ls_data>.
+      FREE lv_line.
       LOOP AT lt_components ASSIGNING <ls_component>.
         ASSIGN COMPONENT <ls_component>-name OF STRUCTURE <ls_data> TO <lv_data>.
-        CASE lv_start_newline.
-          WHEN abap_true.
-            lv_start_newline = abap_false.
-            ev_csv_string = ev_csv_string && generate_cell( iv_fieldname   = <ls_component>-name
-                                                            iv_fieldtype   = <ls_component>-type
-                                                            iv_data        = <lv_data>
-                                                            iv_conv_exit   = mv_conv_exit
-                                                            iv_trim_spaces = mv_trim_spaces       ).
-          WHEN abap_false.
-            ev_csv_string = ev_csv_string && mv_separator && generate_cell( iv_fieldname   = <ls_component>-name
-                                                                            iv_fieldtype   = <ls_component>-type
-                                                                            iv_data        = <lv_data>
-                                                                            iv_conv_exit   = mv_conv_exit
-                                                                            iv_trim_spaces = mv_trim_spaces       ).
-        ENDCASE.
+        IF lv_line IS INITIAL.
+          lv_line = generate_cell( iv_fieldname   = <ls_component>-name
+                                   iv_fieldtype   = <ls_component>-type
+                                   iv_data        = <lv_data>
+                                   iv_conv_exit   = mv_conv_exit
+                                   iv_trim_spaces = mv_trim_spaces       ).
+        ELSE.
+          lv_line =  lv_line
+                  && mv_separator
+                  && generate_cell( iv_fieldname   = <ls_component>-name
+                                    iv_fieldtype   = <ls_component>-type
+                                    iv_data        = <lv_data>
+                                    iv_conv_exit   = mv_conv_exit
+                                    iv_trim_spaces = mv_trim_spaces       ).
+        ENDIF.
       ENDLOOP.
-      ev_csv_string = ev_csv_string && mv_endofline.
-      lv_start_newline = abap_true.
+      lv_line = lv_line && mv_endofline.
+      APPEND lv_line TO lt_lines.
     ENDLOOP.
+
+* ---------------------------------------------------------------------
+    ev_csv_string = concat_lines_of( lt_lines ).
 
 * ---------------------------------------------------------------------
   ENDMETHOD.
