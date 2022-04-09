@@ -141,26 +141,26 @@ CLASS lcl IMPLEMENTATION.
   METHOD shlp_path.
 * ---------------------------------------------------------------------
     DATA:
-      lt_files    TYPE filetable,
-      lv_rc       TYPE i,
-      lv_action   TYPE i,
-      lv_filename TYPE string,
-      lv_path     TYPE string,
-      lv_fullpath TYPE string.
+      files    TYPE filetable,
+      rc       TYPE i,
+      action   TYPE i,
+      filename TYPE string,
+      path     TYPE string,
+      fullpath TYPE string.
 
 * ---------------------------------------------------------------------
-    cl_gui_frontend_services=>file_save_dialog( CHANGING   filename    = lv_filename
-                                                           path        = lv_path
-                                                           fullpath    = lv_fullpath
-                                                           user_action = lv_action
+    cl_gui_frontend_services=>file_save_dialog( CHANGING   filename    = filename
+                                                           path        = path
+                                                           fullpath    = fullpath
+                                                           user_action = action
                                                 EXCEPTIONS OTHERS      = 1           ).
     IF sy-subrc <> 0.
       MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
     ENDIF.
 
 * ---------------------------------------------------------------------
-    IF lv_action = cl_gui_frontend_services=>action_ok.
-      path = lv_fullpath.
+    IF action = cl_gui_frontend_services=>action_ok.
+      path = fullpath.
     ENDIF.
 
 * ---------------------------------------------------------------------
@@ -170,60 +170,60 @@ CLASS lcl IMPLEMENTATION.
   METHOD run.
 * ---------------------------------------------------------------------
     DATA:
-      lo_typedescr   TYPE REF TO cl_abap_typedescr,
-      lo_structdescr TYPE REF TO cl_abap_structdescr,
-      lo_tabledescr  TYPE REF TO cl_abap_tabledescr,
-      lo_csv_file    TYPE REF TO zcl_wd_csv_file,
-      lt_components  TYPE cl_abap_structdescr=>component_table,
-      lr_data        TYPE REF TO data,
-      lx             TYPE REF TO cx_root.
+      typedescr    TYPE REF TO cl_abap_typedescr,
+      structdescr  TYPE REF TO cl_abap_structdescr,
+      tabledescr   TYPE REF TO cl_abap_tabledescr,
+      csv_file     TYPE REF TO zcl_wd_csv_file,
+      components   TYPE cl_abap_structdescr=>component_table,
+      source_table TYPE REF TO data,
+      error        TYPE REF TO cx_root.
     FIELD-SYMBOLS:
-      <lt_data> TYPE STANDARD TABLE.
+      <source_table> TYPE STANDARD TABLE.
 
 * ---------------------------------------------------------------------
     " fake select to check table name
     TRY.
         SELECT COUNT(*) UP TO 1 ROWS FROM (table).
       CATCH cx_sy_dynamic_osql_syntax
-            cx_sy_dynamic_osql_semantics INTO lx.
-        MESSAGE lx TYPE 'S' DISPLAY LIKE 'E'.
+            cx_sy_dynamic_osql_semantics INTO error.
+        MESSAGE error TYPE 'S' DISPLAY LIKE 'E'.
         RETURN.
     ENDTRY.
 
-    lo_typedescr = cl_abap_structdescr=>describe_by_name( table ).
+    typedescr = cl_abap_structdescr=>describe_by_name( table ).
     TRY.
-        lo_tabledescr = cl_abap_tabledescr=>create( CAST #( lo_typedescr ) ).
-      CATCH cx_sy_table_creation INTO lx.
-        MESSAGE lx TYPE 'S' DISPLAY LIKE 'E'.
+        tabledescr = cl_abap_tabledescr=>create( CAST #( typedescr ) ).
+      CATCH cx_sy_table_creation INTO error.
+        MESSAGE error TYPE 'S' DISPLAY LIKE 'E'.
         RETURN.
     ENDTRY.
 
 * ---------------------------------------------------------------------
-    CREATE DATA lr_data TYPE HANDLE lo_tabledescr.
-    ASSIGN lr_data->* TO <lt_data>.
+    CREATE DATA source_table TYPE HANDLE tabledescr.
+    ASSIGN source_table->* TO <source_table>.
 
 * ---------------------------------------------------------------------
     TRY.
         SELECT * UP TO @rows ROWS
         FROM (table)
-        INTO TABLE @<lt_data>
+        INTO TABLE @<source_table>
         ORDER BY PRIMARY KEY.
       CATCH cx_sy_dynamic_osql_syntax
-            cx_sy_dynamic_osql_semantics INTO lx.
-        MESSAGE lx TYPE 'S' DISPLAY LIKE 'E'.
+            cx_sy_dynamic_osql_semantics INTO error.
+        MESSAGE error TYPE 'S' DISPLAY LIKE 'E'.
         RETURN.
     ENDTRY.
 
 * ---------------------------------------------------------------------
     TRY.
-        lo_csv_file = NEW #( iv_endofline = endofline
-                             iv_separator = separator
-                             iv_delimiter = delimiter ).
-        lo_csv_file->generate_file_local( iv_with_header = header
-                                          it_data        = <lt_data>
-                                          iv_path        = path      ).
-      CATCH cx_root INTO lx.
-        MESSAGE lx TYPE 'S' DISPLAY LIKE 'E'.
+        csv_file = NEW #( endofline = endofline
+                          separator = separator
+                          delimiter = delimiter ).
+        csv_file->generate_file_local( with_header  = header
+                                       source_table = <source_table>
+                                       path         = path      ).
+      CATCH cx_root INTO error.
+        MESSAGE error TYPE 'S' DISPLAY LIKE 'E'.
         RETURN.
     ENDTRY.
 
