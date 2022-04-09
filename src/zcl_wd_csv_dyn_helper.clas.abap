@@ -694,7 +694,7 @@ CLASS zcl_wd_csv_dyn_helper IMPLEMENTATION.
 
 * ----------------------------------------------------------------------
     result = guess_endofline_4str( csv_string       = csv_string
-                                         guess_char_count = guess_char_count ).
+                                   guess_char_count = guess_char_count ).
 
 * ----------------------------------------------------------------------
   ENDMETHOD.

@@ -145,12 +145,12 @@ CLASS lcl IMPLEMENTATION.
       rc       TYPE i,
       action   TYPE i,
       filename TYPE string,
-      path     TYPE string,
+      l_path   TYPE string,
       fullpath TYPE string.
 
 * ---------------------------------------------------------------------
     cl_gui_frontend_services=>file_save_dialog( CHANGING   filename    = filename
-                                                           path        = path
+                                                           path        = l_path
                                                            fullpath    = fullpath
                                                            user_action = action
                                                 EXCEPTIONS OTHERS      = 1           ).
