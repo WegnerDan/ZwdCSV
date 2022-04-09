@@ -10,9 +10,9 @@ CLASS zcx_wd_csv_invalid_delimiter DEFINITION PUBLIC INHERITING FROM zcx_wd_csv_
         attr4 TYPE scx_attrname VALUE '',
       END OF zcx_wd_csv_invalid_delimiter.
     DATA:
-      delimiter TYPE zcl_wd_csv=>mty_delimiter READ-ONLY.
+      delimiter TYPE zcl_wd_csv=>ty_delimiter READ-ONLY.
     METHODS:
-      constructor IMPORTING delimiter TYPE zcl_wd_csv=>mty_delimiter.
+      constructor IMPORTING delimiter TYPE zcl_wd_csv=>ty_delimiter.
   PROTECTED SECTION.
   PRIVATE SECTION.
 ENDCLASS.

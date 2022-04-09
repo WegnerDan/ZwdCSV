@@ -15,9 +15,9 @@ CLASS lcl DEFINITION.
       pai.
   PRIVATE SECTION.
     DATA:
-      mv_delimiter TYPE zcl_wd_csv=>mty_delimiter,
-      mv_separator TYPE zcl_wd_csv=>mty_separator,
-      mv_endofline TYPE string.
+      delimiter TYPE zcl_wd_csv=>ty_delimiter,
+      separator TYPE zcl_wd_csv=>ty_separator,
+      endofline TYPE string.
 ENDCLASS.
 
 *=======================================================================
@@ -109,27 +109,27 @@ CLASS lcl IMPLEMENTATION.
 * ---------------------------------------------------------------------
     CASE abap_true.
       WHEN del_dq.
-        mv_delimiter = zcl_wd_csv=>mc_delimiter_double_quote.
+        delimiter = zcl_wd_csv=>c_delimiter_double_quote.
       WHEN del_sq.
-        mv_delimiter = zcl_wd_csv=>mc_delimiter_single_quote.
+        delimiter = zcl_wd_csv=>c_delimiter_single_quote.
     ENDCASE.
 
 * ---------------------------------------------------------------------
     CASE abap_true.
       WHEN septab.
-        mv_separator = zcl_wd_csv=>mc_separator_tab.
+        separator = zcl_wd_csv=>c_separator_tab.
       WHEN sepother.
-        mv_separator = sep.
+        separator = sep.
     ENDCASE.
 
 * ---------------------------------------------------------------------
     CASE abap_true.
       WHEN crlf.
-        mv_endofline = zcl_wd_csv=>mc_endofline_cr_lf.
+        endofline = zcl_wd_csv=>c_endofline_cr_lf.
       WHEN lf.
-        mv_endofline = zcl_wd_csv=>mc_endofline_lf.
+        endofline = zcl_wd_csv=>c_endofline_lf.
       WHEN cr.
-        mv_endofline = zcl_wd_csv=>mc_endofline_cr.
+        endofline = zcl_wd_csv=>c_endofline_cr.
     ENDCASE.
 
 * ---------------------------------------------------------------------
@@ -138,23 +138,23 @@ CLASS lcl IMPLEMENTATION.
   METHOD shlp_path.
 * ---------------------------------------------------------------------
     DATA:
-      lt_files  TYPE filetable,
-      lv_rc     TYPE i,
-      lv_action TYPE i.
+      files  TYPE filetable,
+      rc     TYPE i,
+      action TYPE i.
 
 * ---------------------------------------------------------------------
     cl_gui_frontend_services=>file_open_dialog( EXPORTING  multiselection = abap_false
-                                                CHANGING   file_table     = lt_files
-                                                           rc             = lv_rc
-                                                           user_action    = lv_action
+                                                CHANGING   file_table     = files
+                                                           rc             = rc
+                                                           user_action    = action
                                                 EXCEPTIONS OTHERS         = 1           ).
     IF sy-subrc <> 0.
       MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
     ENDIF.
 
 * ---------------------------------------------------------------------
-    IF lv_action = cl_gui_frontend_services=>action_ok.
-      path = lt_files[ 1 ]-filename.
+    IF action = cl_gui_frontend_services=>action_ok.
+      path = files[ 1 ]-filename.
     ENDIF.
 
 * ---------------------------------------------------------------------
@@ -164,84 +164,84 @@ CLASS lcl IMPLEMENTATION.
   METHOD run.
 * ---------------------------------------------------------------------
     DATA:
-      lo_csv_file   TYPE REF TO zcl_wd_csv_file,
-      lt_components TYPE cl_abap_structdescr=>component_table,
-      lr_data       TYPE REF TO data,
-      lx            TYPE REF TO cx_root,
-      lv_answer     TYPE c LENGTH 1.
+      csv_file     TYPE REF TO zcl_wd_csv_file,
+      components   TYPE cl_abap_structdescr=>component_table,
+      target_table TYPE REF TO data,
+      error        TYPE REF TO cx_root,
+      answer       TYPE c LENGTH 1.
     FIELD-SYMBOLS:
-      <lt_data> TYPE STANDARD TABLE.
+      <target_table> TYPE STANDARD TABLE.
 
 * ---------------------------------------------------------------------
     DO cols TIMES.
       APPEND VALUE #( name = 'COL_' && sy-index
                       type = cl_abap_elemdescr=>get_string( )
-                    ) TO lt_components.
+                    ) TO components.
     ENDDO.
 
 * ---------------------------------------------------------------------
     TRY.
-        DATA(lo_tabledescr) = cl_abap_tabledescr=>create( cl_abap_structdescr=>create( lt_components ) ).
-      CATCH cx_root INTO lx.
-        MESSAGE lx TYPE 'S' DISPLAY LIKE 'E'.
+        DATA(lo_tabledescr) = cl_abap_tabledescr=>create( cl_abap_structdescr=>create( components ) ).
+      CATCH cx_root INTO error.
+        MESSAGE error TYPE 'S' DISPLAY LIKE 'E'.
         RETURN.
     ENDTRY.
 
 * ---------------------------------------------------------------------
-    CREATE DATA lr_data TYPE HANDLE lo_tabledescr.
-    ASSIGN lr_data->* TO <lt_data>.
+    CREATE DATA target_table TYPE HANDLE lo_tabledescr.
+    ASSIGN target_table->* TO <target_table>.
 
 * ---------------------------------------------------------------------
     TRY.
-        lo_csv_file = NEW #( iv_endofline = mv_endofline
-                             iv_separator = mv_separator
-                             iv_delimiter = mv_delimiter ).
-        lo_csv_file->parse_file_local( EXPORTING iv_has_header = header
-                                                 iv_path       = path
-                                       IMPORTING et_data       = <lt_data> ).
+        csv_file = NEW #( endofline = endofline
+                          separator = separator
+                          delimiter = delimiter ).
+        csv_file->parse_file_local( EXPORTING has_header = header
+                                              path       = path
+                                    IMPORTING target_table = <target_table> ).
       CATCH BEFORE UNWIND zcx_wd_csv_too_many_columns
                           zcx_wd_csv_too_few_columns
-                          zcx_wd_csv_mixed_endofline INTO lx.
+                          zcx_wd_csv_mixed_endofline INTO error.
         CALL FUNCTION 'POPUP_TO_CONFIRM'
           EXPORTING
-            text_question         = lx->get_text( ) && ` ` && 'Continue?'(007)
+            text_question         = error->get_text( ) && ` ` && 'Continue?'(007)
             display_cancel_button = abap_false
             popup_type            = 'ICON_MESSAGE_ERROR'
           IMPORTING
-            answer                = lv_answer.
-        IF lv_answer = 1.
+            answer                = answer.
+        IF answer = 1.
           RESUME.
         ELSE.
           RETURN.
         ENDIF.
-      CATCH cx_root INTO lx.
-        MESSAGE lx TYPE 'S' DISPLAY LIKE 'E'.
+      CATCH cx_root INTO error.
+        MESSAGE error TYPE 'S' DISPLAY LIKE 'E'.
         RETURN.
     ENDTRY.
 
 * ---------------------------------------------------------------------
     TRY.
-        cl_salv_table=>factory( IMPORTING r_salv_table = DATA(lo_salv_table)
-                                CHANGING  t_table      = <lt_data>           ).
+        cl_salv_table=>factory( IMPORTING r_salv_table = DATA(salv_table)
+                                CHANGING  t_table      = <target_table> ).
 
-        DATA(lt_header_columns) = lo_csv_file->get_header_columns( ).
+        DATA(header_columns) = csv_file->get_header_columns( ).
 
-        LOOP AT lo_salv_table->get_columns( )->get( ) ASSIGNING FIELD-SYMBOL(<ls_col>).
+        LOOP AT salv_table->get_columns( )->get( ) ASSIGNING FIELD-SYMBOL(<col>).
           CASE header.
             WHEN abap_true.
-              READ TABLE lt_header_columns INTO DATA(ls_header_column)
-              WITH KEY index = sy-tabix BINARY SEARCH.
-              IF sy-subrc = 0.
-                <ls_col>-r_column->set_short_text( CONV #( ls_header_column-name ) ).
-              ENDIF.
+              TRY.
+                  <col>-r_column->set_short_text( CONV #( header_columns[ sy-tabix ]-name ) ).
+                CATCH cx_sy_itab_line_not_found.
+                  <col>-r_column->set_short_text( CONV #( sy-tabix ) ).
+              ENDTRY.
             WHEN abap_false.
-              <ls_col>-r_column->set_short_text( CONV #( sy-tabix ) ).
+              <col>-r_column->set_short_text( CONV #( sy-tabix ) ).
           ENDCASE.
         ENDLOOP.
 
-        lo_salv_table->display( ).
-      CATCH cx_salv_msg INTO lx.
-        MESSAGE lx TYPE 'S' DISPLAY LIKE 'E'.
+        salv_table->display( ).
+      CATCH cx_salv_msg INTO error.
+        MESSAGE error TYPE 'S' DISPLAY LIKE 'E'.
     ENDTRY.
 
 * ---------------------------------------------------------------------
