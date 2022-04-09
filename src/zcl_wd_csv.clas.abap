@@ -1,28 +1,28 @@
 CLASS zcl_wd_csv DEFINITION PUBLIC CREATE PUBLIC.
   PUBLIC SECTION.
     TYPES:
-      mty_separator TYPE c LENGTH 1,
-      mty_delimiter TYPE c LENGTH 1,
-      BEGIN OF mty_s_header_column,
+      ty_separator TYPE c LENGTH 1,
+      ty_delimiter TYPE c LENGTH 1,
+      BEGIN OF ty_header_column,
         index TYPE i,
         name  TYPE string,
-      END OF mty_s_header_column,
-      mty_t_header_column TYPE SORTED TABLE OF mty_s_header_column WITH UNIQUE KEY index.
+      END OF ty_header_column,
+      ty_header_columns TYPE SORTED TABLE OF ty_header_column WITH UNIQUE KEY index.
     CONSTANTS:
-      mc_separator_tab          TYPE mty_separator VALUE cl_abap_char_utilities=>horizontal_tab,
-      mc_separator_semicolon    TYPE mty_separator VALUE ';',
-      mc_separator_comma        TYPE mty_separator VALUE ',',
-      mc_delimiter_single_quote TYPE mty_delimiter VALUE '''',
-      mc_delimiter_double_quote TYPE mty_delimiter VALUE '"',
-      mc_endofline_lf           TYPE c LENGTH 1    VALUE cl_abap_char_utilities=>newline,
-      mc_endofline_cr_lf        TYPE c LENGTH 2    VALUE cl_abap_char_utilities=>cr_lf,
-      mc_endofline_cr           TYPE c LENGTH 1    VALUE cl_abap_char_utilities=>cr_lf.
+      c_separator_tab          TYPE ty_separator VALUE cl_abap_char_utilities=>horizontal_tab,
+      c_separator_semicolon    TYPE ty_separator VALUE ';',
+      c_separator_comma        TYPE ty_separator VALUE ',',
+      c_delimiter_single_quote TYPE ty_delimiter VALUE '''',
+      c_delimiter_double_quote TYPE ty_delimiter VALUE '"',
+      c_endofline_lf           TYPE c LENGTH 1    VALUE cl_abap_char_utilities=>newline,
+      c_endofline_cr_lf        TYPE c LENGTH 2    VALUE cl_abap_char_utilities=>cr_lf,
+      c_endofline_cr           TYPE c LENGTH 1    VALUE cl_abap_char_utilities=>cr_lf.
     METHODS:
-      constructor IMPORTING iv_endofline   TYPE csequence     DEFAULT zcl_wd_csv=>mc_endofline_cr_lf
-                            iv_separator   TYPE mty_separator DEFAULT zcl_wd_csv=>mc_separator_tab
-                            iv_delimiter   TYPE mty_delimiter DEFAULT zcl_wd_csv=>mc_delimiter_double_quote
-                            iv_conv_exit   TYPE abap_bool     DEFAULT abap_false
-                            iv_trim_spaces TYPE abap_bool     DEFAULT abap_false
+      constructor IMPORTING iv_endofline   TYPE csequence    DEFAULT zcl_wd_csv=>c_endofline_cr_lf
+                            iv_separator   TYPE ty_separator DEFAULT zcl_wd_csv=>c_separator_tab
+                            iv_delimiter   TYPE ty_delimiter DEFAULT zcl_wd_csv=>c_delimiter_double_quote
+                            iv_conv_exit   TYPE abap_bool    DEFAULT abap_false
+                            iv_trim_spaces TYPE abap_bool    DEFAULT abap_false
                   RAISING   zcx_wd_csv_invalid_endofline
                             zcx_wd_csv_invalid_separator
                             zcx_wd_csv_invalid_delimiter,
@@ -38,45 +38,45 @@ CLASS zcl_wd_csv DEFINITION PUBLIC CREATE PUBLIC.
       generate_string IMPORTING iv_with_header TYPE abap_bool DEFAULT abap_false
                                 it_data        TYPE STANDARD TABLE
                       EXPORTING ev_csv_string  TYPE string,
-      get_header_columns RETURNING VALUE(rt_header_columns) TYPE mty_t_header_column,
-      get_separator RETURNING VALUE(rv_separator) TYPE mty_separator,
-      set_separator IMPORTING iv_separator TYPE mty_separator DEFAULT zcl_wd_csv=>mc_separator_tab
+      get_header_columns RETURNING VALUE(rt_header_columns) TYPE ty_header_columns,
+      get_separator RETURNING VALUE(rv_separator) TYPE ty_separator,
+      set_separator IMPORTING iv_separator TYPE ty_separator DEFAULT zcl_wd_csv=>c_separator_tab
                     RAISING   zcx_wd_csv_invalid_separator,
       get_endofline RETURNING VALUE(rv_endofline) TYPE string,
-      set_endofline IMPORTING iv_endofline TYPE csequence DEFAULT zcl_wd_csv=>mc_endofline_cr_lf
+      set_endofline IMPORTING iv_endofline TYPE csequence DEFAULT zcl_wd_csv=>c_endofline_cr_lf
                     RAISING   zcx_wd_csv_invalid_endofline,
-      get_delimiter RETURNING VALUE(rv_delimiter) TYPE mty_delimiter,
-      set_delimiter IMPORTING iv_delimiter TYPE mty_delimiter DEFAULT zcl_wd_csv=>mc_delimiter_double_quote
+      get_delimiter RETURNING VALUE(rv_delimiter) TYPE ty_delimiter,
+      set_delimiter IMPORTING iv_delimiter TYPE ty_delimiter DEFAULT zcl_wd_csv=>c_delimiter_double_quote
                     RAISING   zcx_wd_csv_invalid_delimiter,
       get_conv_exit RETURNING VALUE(rv_conv_exit) TYPE abap_bool,
       set_conv_exit IMPORTING iv_conv_exit TYPE abap_bool DEFAULT abap_true,
-      get_trim_spaces RETURNING VALUE(iv_trim_spaces) TYPE abap_bool,
+      get_trim_spaces RETURNING VALUE(result) TYPE abap_bool,
       set_trim_spaces IMPORTING iv_trim_spaces TYPE abap_bool DEFAULT abap_true.
   PROTECTED SECTION.
     TYPES:
-      BEGIN OF mty_s_string_struc,
+      BEGIN OF ty_string_struc,
         ref     TYPE REF TO data,
         columns TYPE i,
-      END OF mty_s_string_struc,
-      BEGIN OF mty_s_comp_convex,
+      END OF ty_string_struc,
+      BEGIN OF ty_comp_conversion_exit,
         name     TYPE string,
         convexit TYPE convexit,
         temp_fld TYPE REF TO data,
-      END OF mty_s_comp_convex,
-      mty_t_comp_convex TYPE SORTED TABLE OF mty_s_comp_convex WITH UNIQUE KEY name.
+      END OF ty_comp_conversion_exit,
+      ty_comp_conversion_exits TYPE SORTED TABLE OF ty_comp_conversion_exit WITH UNIQUE KEY name.
     DATA:
-      mv_endofline      TYPE string, " length can be 1 or 2 characters.
-      mv_separator      TYPE mty_separator,
-      mv_delimiter      TYPE mty_delimiter,
-      mv_conv_exit      TYPE abap_bool,
-      mv_trim_spaces    TYPE abap_bool,
-      mv_ts_parse       TYPE timestampl,
-      mv_ts_convex      TYPE timestampl,
-      mt_comp_convex    TYPE mty_t_comp_convex,
-      mt_header_columns TYPE mty_t_header_column.
+      endofline           TYPE string, " length can be 1 or 2 characters.
+      separator           TYPE ty_separator,
+      delimiter           TYPE ty_delimiter,
+      conv_exit           TYPE abap_bool,
+      trim_spaces_enabled TYPE abap_bool,
+      ts_parse            TYPE timestampl,
+      ts_convex           TYPE timestampl,
+      comp_conv_exits     TYPE ty_comp_conversion_exits,
+      header_columns      TYPE ty_header_columns.
     METHODS:
       create_string_struc IMPORTING it_data             TYPE ANY TABLE
-                          RETURNING VALUE(rs_str_struc) TYPE mty_s_string_struc
+                          RETURNING VALUE(rs_str_struc) TYPE ty_string_struc
                           RAISING   cx_sy_struct_creation,
       fill_header_columns_tab IMPORTING is_header TYPE any,
       move_data IMPORTING iv_conv_exit   TYPE abap_bool
@@ -114,9 +114,9 @@ CLASS zcl_wd_csv IMPLEMENTATION.
       <lv_exp>  TYPE any.
 
 * ---------------------------------------------------------------------
-    IF mv_ts_convex <> mv_ts_parse.
-      mv_ts_convex = mv_ts_parse.
-      FREE mt_comp_convex.
+    IF ts_convex <> ts_parse.
+      ts_convex = ts_parse.
+      FREE comp_conv_exits.
       lo_structdescr ?= cl_abap_structdescr=>describe_by_data( cs ).
       LOOP AT lo_structdescr->get_included_view( ) ASSIGNING FIELD-SYMBOL(<ls_component>).
 *
@@ -130,12 +130,12 @@ CLASS zcl_wd_csv IMPLEMENTATION.
         CREATE DATA lr TYPE HANDLE <ls_component>-type.
         INSERT VALUE #( name     = <ls_component>-name
                         convexit = ls_dfies-convexit
-                        temp_fld = lr                  ) INTO TABLE mt_comp_convex.
+                        temp_fld = lr                  ) INTO TABLE comp_conv_exits.
       ENDLOOP.
     ENDIF.
 
 * ---------------------------------------------------------------------
-    LOOP AT mt_comp_convex ASSIGNING FIELD-SYMBOL(<ls>).
+    LOOP AT comp_conv_exits ASSIGNING FIELD-SYMBOL(<ls>).
       ASSIGN <ls>-temp_fld->* TO <lv_temp>.
       FREE <lv_temp>.
       ASSIGN COMPONENT <ls>-name OF STRUCTURE is TO <lv_str>.
@@ -179,21 +179,21 @@ CLASS zcl_wd_csv IMPLEMENTATION.
 
   METHOD contains_only_empty_lines.
 * ---------------------------------------------------------------------
-    CASE strlen( mv_endofline ).
+    CASE strlen( endofline ).
       WHEN 1.
-        IF iv CO ` ` && mv_endofline.
+        IF iv CO ` ` && endofline.
           rv = abap_true.
         ENDIF.
       WHEN 2.
         " CO alone is not sufficient in case of 2 character end of line
-        " first check if only end of line and space are contaned for speed (CO does not care about the order of the characters)
+        " first check if only end of line and space are contained for speed (CO does not care about the order of the characters)
         " then check if a the string without end of line characters contains only spaces
         " only if both are true, return true
-        IF iv CO ` ` && mv_endofline
+        IF iv CO ` ` && endofline
         AND replace( val  = iv
                      with = space
                      occ  = 0
-                     sub  = mv_endofline ) CO ` `.
+                     sub  = endofline ) CO ` `.
           rv = abap_true.
         ENDIF.
     ENDCASE.
@@ -240,7 +240,7 @@ CLASS zcl_wd_csv IMPLEMENTATION.
       IF sy-subrc <> 0. RETURN. ENDIF.
       INSERT VALUE #( index = sy-index
                       name  = <lv>
-                    ) INTO TABLE mt_header_columns.
+                    ) INTO TABLE header_columns.
     ENDDO.
 
 * ---------------------------------------------------------------------
@@ -269,18 +269,18 @@ CLASS zcl_wd_csv IMPLEMENTATION.
 
 * ---------------------------------------------------------------------
     " escape quotes
-    IF find( val = rv_cell sub = mv_delimiter ) >= 0.
+    IF find( val = rv_cell sub = delimiter ) >= 0.
       lv_delimit = abap_true.
       rv_cell = replace( val  = rv_cell
-                         sub  = mv_delimiter
+                         sub  = delimiter
                          occ  = 0
-                         with = mv_delimiter && mv_delimiter ).
+                         with = delimiter && delimiter ).
     ENDIF.
 
 * ---------------------------------------------------------------------
     " if the cell contains a separator or any newline character, it needs to be delimited
     IF lv_delimit = abap_false
-    AND (    find( val = rv_cell sub = mv_separator                       ) >= 0
+    AND (    find( val = rv_cell sub = separator                          ) >= 0
           OR find( val = rv_cell sub = cl_abap_char_utilities=>cr_lf      ) >= 0
           OR find( val = rv_cell sub = cl_abap_char_utilities=>cr_lf+0(1) ) >= 0
           OR find( val = rv_cell sub = cl_abap_char_utilities=>cr_lf+1(1) ) >= 0 ).
@@ -289,7 +289,7 @@ CLASS zcl_wd_csv IMPLEMENTATION.
 
 * ---------------------------------------------------------------------
     IF lv_delimit = abap_true.
-      rv_cell = mv_delimiter && rv_cell && mv_delimiter.
+      rv_cell = delimiter && rv_cell && delimiter.
     ENDIF.
 
 * ---------------------------------------------------------------------
@@ -311,7 +311,7 @@ CLASS zcl_wd_csv IMPLEMENTATION.
       <lv_data>      TYPE data.
 
 * ---------------------------------------------------------------------
-    FREE: ev_csv_string, mt_header_columns.
+    FREE: ev_csv_string, header_columns.
 
 * ---------------------------------------------------------------------
     lo_tabledescr ?= cl_abap_typedescr=>describe_by_data( it_data ).
@@ -323,23 +323,23 @@ CLASS zcl_wd_csv IMPLEMENTATION.
       LOOP AT lt_components ASSIGNING <ls_component>.
         INSERT VALUE #( index = sy-tabix
                         name  = <ls_component>-name
-                      ) INTO TABLE mt_header_columns.
+                      ) INTO TABLE header_columns.
 
         IF lv_line IS INITIAL.
           lv_line = generate_cell( iv_fieldname   = <ls_component>-name
                                    iv_fieldtype   = <ls_component>-type
                                    iv_data        = <ls_component>-name
-                                   iv_conv_exit   = mv_conv_exit
-                                   iv_trim_spaces = mv_trim_spaces       ).
+                                   iv_conv_exit   = conv_exit
+                                   iv_trim_spaces = trim_spaces_enabled ).
         ELSE.
-          lv_line = lv_line && mv_separator && generate_cell( iv_fieldname   = <ls_component>-name
+             lv_line = lv_line && separator && generate_cell( iv_fieldname   = <ls_component>-name
                                                               iv_fieldtype   = <ls_component>-type
                                                               iv_data        = <ls_component>-name
-                                                              iv_conv_exit   = mv_conv_exit
-                                                              iv_trim_spaces = mv_trim_spaces       ).
+                                                              iv_conv_exit   = conv_exit
+                                                              iv_trim_spaces = trim_spaces_enabled ).
         ENDIF.
       ENDLOOP.
-      lv_line = lv_line && mv_endofline.
+      lv_line = lv_line && endofline.
       APPEND lv_line TO lt_lines.
     ENDIF.
 
@@ -355,19 +355,19 @@ CLASS zcl_wd_csv IMPLEMENTATION.
           lv_line = generate_cell( iv_fieldname   = <ls_component>-name
                                    iv_fieldtype   = <ls_component>-type
                                    iv_data        = <lv_data>
-                                   iv_conv_exit   = mv_conv_exit
-                                   iv_trim_spaces = mv_trim_spaces       ).
+                                   iv_conv_exit   = conv_exit
+                                   iv_trim_spaces = trim_spaces_enabled ).
         ELSE.
           lv_line =  lv_line
-                  && mv_separator
+                  && separator
                   && generate_cell( iv_fieldname   = <ls_component>-name
                                     iv_fieldtype   = <ls_component>-type
                                     iv_data        = <lv_data>
-                                    iv_conv_exit   = mv_conv_exit
-                                    iv_trim_spaces = mv_trim_spaces       ).
+                                    iv_conv_exit   = conv_exit
+                                    iv_trim_spaces = trim_spaces_enabled ).
         ENDIF.
       ENDLOOP.
-      lv_line = lv_line && mv_endofline.
+      lv_line = lv_line && endofline.
       APPEND lv_line TO lt_lines.
     ENDLOOP.
 
@@ -380,7 +380,7 @@ CLASS zcl_wd_csv IMPLEMENTATION.
 
   METHOD get_conv_exit.
 * ---------------------------------------------------------------------
-    rv_conv_exit = mv_conv_exit.
+    rv_conv_exit = conv_exit.
 
 * ---------------------------------------------------------------------
   ENDMETHOD.
@@ -388,7 +388,7 @@ CLASS zcl_wd_csv IMPLEMENTATION.
 
   METHOD get_delimiter.
 * ---------------------------------------------------------------------
-    rv_delimiter = mv_delimiter.
+    rv_delimiter = delimiter.
 
 * ---------------------------------------------------------------------
   ENDMETHOD.
@@ -396,7 +396,7 @@ CLASS zcl_wd_csv IMPLEMENTATION.
 
   METHOD get_endofline.
 * ---------------------------------------------------------------------
-    rv_endofline = mv_endofline.
+    rv_endofline = endofline.
 
 * ---------------------------------------------------------------------
   ENDMETHOD.
@@ -404,7 +404,7 @@ CLASS zcl_wd_csv IMPLEMENTATION.
 
   METHOD get_header_columns.
 * ---------------------------------------------------------------------
-    rt_header_columns = mt_header_columns.
+    rt_header_columns = header_columns.
 
 * ---------------------------------------------------------------------
   ENDMETHOD.
@@ -412,7 +412,7 @@ CLASS zcl_wd_csv IMPLEMENTATION.
 
   METHOD get_separator.
 * ---------------------------------------------------------------------
-    rv_separator = mv_separator.
+    rv_separator = separator.
 
 * ---------------------------------------------------------------------
   ENDMETHOD.
@@ -420,7 +420,7 @@ CLASS zcl_wd_csv IMPLEMENTATION.
 
   METHOD get_trim_spaces.
 * ---------------------------------------------------------------------
-    iv_trim_spaces = mv_trim_spaces.
+    result = trim_spaces_enabled.
 
 * ---------------------------------------------------------------------
   ENDMETHOD.
@@ -453,7 +453,7 @@ CLASS zcl_wd_csv IMPLEMENTATION.
       lv_first_line TYPE abap_bool VALUE abap_true,
       lv_delimited  TYPE abap_bool,
       lv_in_cell    TYPE abap_bool,
-      ls_str_struc  TYPE mty_s_string_struc.
+      ls_str_struc  TYPE ty_string_struc.
     FIELD-SYMBOLS:
       <ls_data_str> TYPE any,  " temporary structure with string types components
       <ls_data_exp> TYPE any,  " line of export table
@@ -486,11 +486,11 @@ CLASS zcl_wd_csv IMPLEMENTATION.
     END-OF-DEFINITION.
 
 * ---------------------------------------------------------------------
-    FREE: et_data, mt_header_columns.
+    FREE: et_data, header_columns.
 
 * ---------------------------------------------------------------------
     " for conv exit buffering
-    GET TIME STAMP FIELD mv_ts_parse.
+    GET TIME STAMP FIELD ts_parse.
 
 * ---------------------------------------------------------------------
     ls_str_struc = create_string_struc( et_data ).
@@ -506,13 +506,13 @@ CLASS zcl_wd_csv IMPLEMENTATION.
 * ---------------------------------------------------------------------
     DO.
       CASE iv_csv_string+lv_str_pos(1).
-        WHEN mv_delimiter.
+        WHEN delimiter.
           CASE lv_delimited.
             WHEN abap_false.
               lv_delimited = abap_true.
             WHEN abap_true.
               IF ( lv_str_length - lv_str_pos ) >= 2 " make sure at least two characters are left in the string
-              AND iv_csv_string+lv_str_pos(2) = mv_delimiter && mv_delimiter.
+              AND iv_csv_string+lv_str_pos(2) = delimiter && delimiter.
                 " if the current csv cell is delimited and double double quotes are in it, add one of them to the abap cell
                 append_character.
                 lv_str_pos = lv_str_pos + 1.
@@ -521,7 +521,7 @@ CLASS zcl_wd_csv IMPLEMENTATION.
                 lv_delimited = abap_false.
               ENDIF.
           ENDCASE.
-        WHEN mv_separator.
+        WHEN separator.
           IF lv_delimited = abap_true.
             append_character. continue_loop.
           ENDIF.
@@ -536,7 +536,7 @@ CLASS zcl_wd_csv IMPLEMENTATION.
               EXPORTING
                 line = lv_curr_line.
           ENDIF.
-        WHEN mc_endofline_lf OR mc_endofline_cr_lf(1).
+        WHEN c_endofline_lf OR c_endofline_cr_lf(1).
           IF lv_delimited = abap_true.
             append_character. continue_loop.
           ENDIF.
@@ -552,26 +552,26 @@ CLASS zcl_wd_csv IMPLEMENTATION.
             ENDIF.
             lv_component = 1.
             ASSIGN COMPONENT lv_component OF STRUCTURE <ls_data_str> TO <lv_data>.
-            IF mv_endofline = mc_endofline_cr_lf.
+            IF endofline = c_endofline_cr_lf.
               lv_str_pos = lv_str_pos + 1.
             ENDIF.
             continue_loop.
           ENDIF.
-          IF (     mv_endofline = mc_endofline_cr_lf
-               AND iv_csv_string+lv_str_pos(2) <> mc_endofline_cr_lf )
-          OR (     mv_endofline = mc_endofline_lf
-               AND iv_csv_string+lv_str_pos(1) <> mc_endofline_lf    )
-          OR (     mv_endofline = mc_endofline_cr
-               AND iv_csv_string+lv_str_pos(1) <> mc_endofline_cr    ).
+          IF (     endofline = c_endofline_cr_lf
+               AND iv_csv_string+lv_str_pos(2) <> c_endofline_cr_lf )
+          OR (     endofline = c_endofline_lf
+               AND iv_csv_string+lv_str_pos(1) <> c_endofline_lf    )
+          OR (     endofline = c_endofline_cr
+               AND iv_csv_string+lv_str_pos(1) <> c_endofline_cr    ).
             RAISE RESUMABLE EXCEPTION TYPE zcx_wd_csv_mixed_endofline
               EXPORTING
                 line = lv_curr_line.
           ENDIF.
           " check if rest of string is empty and parsing is finished
-          CASE mv_endofline.
-            WHEN mc_endofline_cr OR mc_endofline_lf.
+          CASE endofline.
+            WHEN c_endofline_cr OR c_endofline_lf.
               lv_str_pos_p1 = lv_str_pos + 1.
-            WHEN mc_endofline_cr_lf ##WHEN_DOUBLE_OK.
+            WHEN c_endofline_cr_lf ##WHEN_DOUBLE_OK.
               lv_str_pos_p1 = lv_str_pos + 2.
           ENDCASE.
           IF iv_csv_string+lv_str_pos_p1 CO space.
@@ -580,16 +580,16 @@ CLASS zcl_wd_csv IMPLEMENTATION.
                 EXPORTING
                   line = lv_curr_line.
             ENDIF.
-            move_data( EXPORTING iv_conv_exit   = mv_conv_exit
-                                 iv_trim_spaces = mv_trim_spaces
+            move_data( EXPORTING iv_conv_exit   = conv_exit
+                                 iv_trim_spaces = trim_spaces_enabled
                        CHANGING  cs_str = <ls_data_str>
                                  cs_exp = <ls_data_exp>          ).
             EXIT.
             " Without && '' syntax check complains:
             " "Offsets or lengths cannot be specified for fields of type "STRING" or "XSTRING" in the current statement"
           ELSEIF contains_only_empty_lines( iv_csv_string+lv_str_pos_p1 && '' ).
-            move_data( EXPORTING iv_conv_exit   = mv_conv_exit
-                                 iv_trim_spaces = mv_trim_spaces
+            move_data( EXPORTING iv_conv_exit   = conv_exit
+                                 iv_trim_spaces = trim_spaces_enabled
                        CHANGING  cs_str = <ls_data_str>
                                  cs_exp = <ls_data_exp>          ).
             EXIT.
@@ -600,12 +600,12 @@ CLASS zcl_wd_csv IMPLEMENTATION.
               EXPORTING
                 line = lv_curr_line.
           ENDIF.
-          move_data( EXPORTING iv_conv_exit   = mv_conv_exit
-                               iv_trim_spaces = mv_trim_spaces
+          move_data( EXPORTING iv_conv_exit   = conv_exit
+                               iv_trim_spaces = trim_spaces_enabled
                      CHANGING  cs_str = <ls_data_str>
                                cs_exp = <ls_data_exp>          ).
           append_line.
-          IF mv_endofline = mc_endofline_cr_lf.
+          IF endofline = c_endofline_cr_lf.
             " advance position because crlf is two characters
             lv_str_pos = lv_str_pos + 1.
           ENDIF.
@@ -614,7 +614,7 @@ CLASS zcl_wd_csv IMPLEMENTATION.
           OR lv_in_cell   = abap_true.
             append_character. continue_loop.
           ELSE.
-            IF mv_trim_spaces = abap_true.
+            IF trim_spaces_enabled = abap_true.
               " ignore space if not currently in cell or delimited
               continue_loop.
             ELSE.
@@ -631,8 +631,8 @@ CLASS zcl_wd_csv IMPLEMENTATION.
             EXPORTING
               line = lv_curr_line.
         ENDIF.
-        move_data( EXPORTING iv_conv_exit   = mv_conv_exit
-                             iv_trim_spaces = mv_trim_spaces
+        move_data( EXPORTING iv_conv_exit   = conv_exit
+                             iv_trim_spaces = trim_spaces_enabled
                    CHANGING  cs_str = <ls_data_str>
                              cs_exp = <ls_data_exp>          ).
         EXIT.
@@ -648,9 +648,9 @@ CLASS zcl_wd_csv IMPLEMENTATION.
 * ---------------------------------------------------------------------
     CASE iv_conv_exit.
       WHEN abap_false.
-        mv_conv_exit = abap_false.
+        conv_exit = abap_false.
       WHEN OTHERS.
-        mv_conv_exit = abap_true.
+        conv_exit = abap_true.
     ENDCASE.
 
 * ---------------------------------------------------------------------
@@ -661,7 +661,7 @@ CLASS zcl_wd_csv IMPLEMENTATION.
 * ---------------------------------------------------------------------
     IF iv_delimiter = ''''
     OR iv_delimiter = '"'.
-      mv_delimiter = iv_delimiter.
+      delimiter = iv_delimiter.
     ELSE.
       RAISE EXCEPTION TYPE zcx_wd_csv_invalid_delimiter
         EXPORTING
@@ -677,8 +677,8 @@ CLASS zcl_wd_csv IMPLEMENTATION.
     " endofline can either be a linefeed/carriage return (one char)
     " or carriage return and linefeed (two chars)
     CASE iv_endofline.
-      WHEN mc_endofline_lf OR mc_endofline_cr_lf OR mc_endofline_cr.
-        mv_endofline = iv_endofline.
+      WHEN c_endofline_lf OR c_endofline_cr_lf OR c_endofline_cr.
+        endofline = iv_endofline.
       WHEN OTHERS.
         RAISE EXCEPTION TYPE zcx_wd_csv_invalid_endofline
           EXPORTING
@@ -694,7 +694,7 @@ CLASS zcl_wd_csv IMPLEMENTATION.
     IF  iv_separator IS NOT INITIAL
     AND iv_separator NA sy-abcde
     AND iv_separator NA '0123456789'.
-      mv_separator = iv_separator.
+      separator = iv_separator.
     ELSE.
       RAISE EXCEPTION TYPE zcx_wd_csv_invalid_separator
         EXPORTING
@@ -709,9 +709,9 @@ CLASS zcl_wd_csv IMPLEMENTATION.
 * ---------------------------------------------------------------------
     CASE iv_trim_spaces.
       WHEN abap_false.
-        mv_trim_spaces = abap_false.
+        trim_spaces_enabled = abap_false.
       WHEN OTHERS.
-        mv_trim_spaces = abap_true.
+        trim_spaces_enabled = abap_true.
     ENDCASE.
 
 * ---------------------------------------------------------------------

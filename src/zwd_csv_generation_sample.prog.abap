@@ -15,9 +15,9 @@ CLASS lcl DEFINITION.
       pai.
   PRIVATE SECTION.
     DATA:
-      mv_delimiter TYPE zcl_wd_csv=>mty_delimiter,
-      mv_separator TYPE zcl_wd_csv=>mty_separator,
-      mv_endofline TYPE string.
+      delimiter TYPE zcl_wd_csv=>ty_delimiter,
+      separator TYPE zcl_wd_csv=>ty_separator,
+      endofline TYPE string.
 ENDCLASS.
 
 *=======================================================================
@@ -112,27 +112,27 @@ CLASS lcl IMPLEMENTATION.
 * ---------------------------------------------------------------------
     CASE abap_true.
       WHEN del_dq.
-        mv_delimiter = zcl_wd_csv=>mc_delimiter_double_quote.
+        delimiter = zcl_wd_csv=>c_delimiter_double_quote.
       WHEN del_sq.
-        mv_delimiter = zcl_wd_csv=>mc_delimiter_single_quote.
+        delimiter = zcl_wd_csv=>c_delimiter_single_quote.
     ENDCASE.
 
 * ---------------------------------------------------------------------
     CASE abap_true.
       WHEN septab.
-        mv_separator = zcl_wd_csv=>mc_separator_tab.
+        separator = zcl_wd_csv=>c_separator_tab.
       WHEN sepother.
-        mv_separator = sep.
+        separator = sep.
     ENDCASE.
 
 * ---------------------------------------------------------------------
     CASE abap_true.
       WHEN crlf.
-        mv_endofline = zcl_wd_csv=>mc_endofline_cr_lf.
+        endofline = zcl_wd_csv=>c_endofline_cr_lf.
       WHEN lf.
-        mv_endofline = zcl_wd_csv=>mc_endofline_lf.
+        endofline = zcl_wd_csv=>c_endofline_lf.
       WHEN cr.
-        mv_endofline = zcl_wd_csv=>mc_endofline_cr.
+        endofline = zcl_wd_csv=>c_endofline_cr.
     ENDCASE.
 
 * ---------------------------------------------------------------------
@@ -216,9 +216,9 @@ CLASS lcl IMPLEMENTATION.
 
 * ---------------------------------------------------------------------
     TRY.
-        lo_csv_file = NEW #( iv_endofline = mv_endofline
-                             iv_separator = mv_separator
-                             iv_delimiter = mv_delimiter ).
+        lo_csv_file = NEW #( iv_endofline = endofline
+                             iv_separator = separator
+                             iv_delimiter = delimiter ).
         lo_csv_file->generate_file_local( iv_with_header = header
                                           it_data        = <lt_data>
                                           iv_path        = path      ).

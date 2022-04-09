@@ -10,9 +10,9 @@ CLASS zcx_wd_csv_invalid_separator DEFINITION PUBLIC INHERITING FROM zcx_wd_csv_
         attr4 TYPE scx_attrname VALUE '',
       END OF zcx_wd_csv_invalid_separator.
     DATA:
-      separator TYPE zcl_wd_csv=>mty_separator READ-ONLY.
+      separator TYPE zcl_wd_csv=>ty_separator READ-ONLY.
     METHODS:
-      constructor IMPORTING separator TYPE zcl_wd_csv=>mty_separator.
+      constructor IMPORTING separator TYPE zcl_wd_csv=>ty_separator.
   PROTECTED SECTION.
   PRIVATE SECTION.
 ENDCLASS.
