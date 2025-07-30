@@ -340,9 +340,11 @@ CLASS zcl_wd_csv IMPLEMENTATION.
 * ---------------------------------------------------------------------
     LOOP AT source_table ASSIGNING <source_line>.
       FREE line.
+      DATA(first_component) = abap_true.
       LOOP AT components ASSIGNING <component>.
         ASSIGN COMPONENT <component>-name OF STRUCTURE <source_line> TO <source_comp>.
-        IF line IS INITIAL.
+        IF first_component = abap_true.
+          first_component = abap_false.
           line = generate_cell( fieldname = <component>-name
                                 fieldtype = <component>-type
                                 value      = <source_comp> ).
