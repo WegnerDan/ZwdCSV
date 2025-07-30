@@ -485,6 +485,9 @@ CLASS zcl_wd_csv IMPLEMENTATION.
 
 * ---------------------------------------------------------------------
     str_length = strlen( csv_string ).
+    IF str_length = 0.
+      RETURN.
+    ENDIF.
 
 * ---------------------------------------------------------------------
     " first line
